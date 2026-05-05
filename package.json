@@ -1,0 +1,12 @@
+{
+  "name": "saan-ai",
+  "version": "1.0.0",
+  "description": "Agentic Metro Manila commute planner powered by Gemini",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0"
+  }
+}

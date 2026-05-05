@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SakayAI — Metro Manila Transit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'Space Mono', monospace;
+  background: #F0EBE0;
+  color: #111;
+}
+
+/* ── RAINBOW STRIPE ── */
+.rainbow {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 10px;
+  background: linear-gradient(90deg,
+    #E63329 0% 12.5%,
+    #F5A623 12.5% 25%,
+    #F5D800 25% 37.5%,
+    #4CAF50 37.5% 50%,
+    #2196F3 50% 62.5%,
+    #9C27B0 62.5% 75%,
+    #E63329 75% 87.5%,
+    #F5D800 87.5% 100%
+  );
+  z-index: 100;
+}
+
+/* ── SHELL ── */
+.shell {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: 100vh;
+  padding-top: 10px;
+}
+
+/* ── LEFT PANEL ── */
+.left {
+  background: #1A1A1A;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 32px 28px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.left::-webkit-scrollbar { width: 0; }
+
+.wordmark {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 108px;
+  line-height: 0.88;
+  color: #F0EBE0;
+  letter-spacing: 0.01em;
+  margin-bottom: 0;
+}
+
+.wordmark-ai {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 108px;
+  line-height: 0.88;
+  color: #F5D800;
+  letter-spacing: 0.01em;
+}
+
+.wordmark-dot {
+  color: #E63329;
+}
+
+.sub-tag {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #555;
+  margin-top: 18px;
+  margin-bottom: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #2A2A2A;
+}
+
+.left-desc {
+  font-size: 13.5px;
+  color: #888;
+  line-height: 1.75;
+  margin-bottom: 32px;
+}
+
+/* LIVE FARES */
+.fares-label {
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #444;
+  margin-bottom: 12px;
+}
+
+.fare-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #222;
+}
+
+.fare-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fare-dot.mrt  { background: #4CAF50; }
+.fare-dot.lrt1 { background: #F5D800; }
+.fare-dot.lrt2 { background: #9C27B0; }
+.fare-dot.jeep { background: #E63329; }
+
+.fare-name { flex: 1; font-size: 12px; color: #AAA; }
+
+.fare-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: #E63329;
+}
+
+/* JEEPNEY ILLUSTRATION */
+.jeepney-wrap {
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.jeepney-svg {
+  width: 100%;
+  max-width: 300px;
+}
+
+/* ── RIGHT PANEL ── */
+.right {
+  background: #F0EBE0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* MODE TOGGLE */
+.mode-bar {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 20px 40px 0;
+  justify-content: flex-end;
+}
+
+.mode-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 4px;
+  border: 1px solid #CCC;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mode-btn.active {
+  background: #1A1A1A;
+  color: #F0EBE0;
+  border-color: #1A1A1A;
+}
+
+.mode-btn:hover:not(.active) {
+  border-color: #999;
+  color: #555;
+}
+
+/* CHAT / EMPTY AREA */
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-area::-webkit-scrollbar { width: 3px; }
+.chat-area::-webkit-scrollbar-thumb { background: #CCC; border-radius: 2px; }
+
+/* EMPTY STATE */
+.empty-state {
+  padding: 36px 40px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.big-question {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 72px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.big-question span {
+  color: #E63329;
+  display: block;
+}
+
+.empty-desc {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.8;
+  margin-bottom: 28px;
+  margin-top: 6px;
+}
+
+.try-label {
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #BBB;
+  margin-bottom: 12px;
+}
+
+.route-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.route-chip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: #F8F4EB;
+  border: 1.5px solid #E0DAD0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  font-family: 'Space Mono', monospace;
+}
+
+.route-chip:hover {
+  border-color: #111;
+  background: #EDEADF;
+}
+
+.chip-icon { font-size: 22px; flex-shrink: 0; }
+.chip-text { flex: 1; font-size: 13px; color: #333; letter-spacing: 0.02em; }
+.chip-arrow { font-size: 16px; color: #E63329; flex-shrink: 0; }
+
+/* MESSAGES */
+.msg-block {
+  padding: 0 40px;
+  margin-bottom: 0;
+  animation: fadein 0.2s ease;
+}
+
+@keyframes fadein { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+.msg-user {
+  background: #1A1A1A;
+  color: #F0EBE0;
+  padding: 16px 40px;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: fadein 0.2s ease;
+}
+
+.msg-bot-wrap {
+  padding: 20px 40px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #333;
+  border-bottom: 1px solid #E0DAD0;
+  animation: fadein 0.2s ease;
+}
+
+/* ROUTE CARD */
+.route-card {
+  margin-top: 14px;
+  border: 2px solid #1A1A1A;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rc-header {
+  background: #1A1A1A;
+  padding: 13px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.rc-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: #F0EBE0;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.rc-meta {
+  font-size: 9px;
+  color: #666;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.step-row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #F0EBE0;
+  transition: background 0.12s;
+}
+
+.step-row:hover { background: #FAFAF7; }
+.step-row:last-of-type { border-bottom: none; }
+
+.step-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  padding: 4px 2px;
+  border-radius: 3px;
+}
+
+.step-badge.mrt  { background: #E8F8EB; color: #1A7A2E; border: 1px solid #B5E0BE; }
+.step-badge.lrt  { background: #FFFBE0; color: #7A6A00; border: 1px solid #EDD; }
+.step-badge.jeep { background: #FFEEEB; color: #9B2C11; border: 1px solid #F5C5BC; }
+.step-badge.bus  { background: #F0EEFF; color: #5533AA; border: 1px solid #D0C8F5; }
+.step-badge.walk { background: #F5F5F5; color: #666; border: 1px solid #DDD; }
+
+.step-lbl { font-size: 13px; font-weight: 700; color: #111; line-height: 1.3; }
+.step-sub { font-size: 10px; color: #AAA; margin-top: 2px; }
+
+.step-fare { font-size: 14px; font-weight: 700; color: #111; white-space: nowrap; }
+
+.rc-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-top: 2px solid #1A1A1A;
+}
+
+.total-cell {
+  padding: 12px 20px;
+  text-align: center;
+  border-right: 1px solid #EEE;
+}
+
+.total-cell:last-child { border-right: none; }
+
+.total-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  color: #111;
+}
+
+.total-val.red { color: #E63329; }
+.total-val.green { color: #1A7A2E; }
+
+.total-lbl {
+  font-size: 8.5px;
+  color: #BBB;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 3px;
+  font-family: 'Space Mono', monospace;
+}
+
+/* TYPING */
+.typing-wrap {
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  animation: fadein 0.2s ease;
+}
+
+.tdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #CCC;
+  animation: tdot 1.1s ease-in-out infinite;
+}
+
+.tdot:nth-child(2) { animation-delay: 0.18s; }
+.tdot:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes tdot { 0%,80%,100%{transform:scale(0.55);opacity:0.3} 40%{transform:scale(1);opacity:1} }
+
+/* ERROR */
+.err-msg {
+  border-left: 3px solid #E63329;
+  padding: 10px 16px;
+  background: #FFF5F4;
+  font-size: 12px;
+  color: #B03010;
+  margin-top: 10px;
+  border-radius: 2px;
+}
+
+/* ── INPUT BAR ── */
+.input-bar {
+  flex-shrink: 0;
+  padding: 16px 40px 24px;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.input-field {
+  flex: 1;
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  color: #111;
+  background: #fff;
+  border: 1.5px solid #CCC;
+  border-radius: 5px;
+  padding: 14px 18px;
+  outline: none;
+  resize: none;
+  max-height: 100px;
+  min-height: 52px;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+
+.input-field:focus { border-color: #1A1A1A; }
+.input-field::placeholder { color: #BBB; }
+
+.send-btn {
+  width: 52px;
+  background: #1A1A1A;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F0EBE0;
+  font-size: 20px;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.send-btn:hover { background: #E63329; }
+.send-btn:active { transform: scale(0.95); }
+.send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.send-btn:disabled:hover { background: #1A1A1A; }
+
+/* AGENT LOG (hidden sidebar on left bottom) */
+.agent-log-section {
+  margin-top: 24px;
+}
+
+.log-head {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #444;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.log-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #444;
+  transition: color 0.3s;
+}
+
+.log-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #444;
+  transition: background 0.3s;
+}
+
+.log-live.on { color: #4CAF50; }
+.log-live.on .log-live-dot { background: #4CAF50; animation: blink 0.9s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+.log-body {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 3px;
+  padding: 8px 10px;
+  height: 130px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.log-body::-webkit-scrollbar { width: 2px; }
+.log-body::-webkit-scrollbar-thumb { background: #333; }
+
+.le {
+  font-size: 9.5px;
+  line-height: 1.5;
+  color: #3A3A3A;
+  animation: fadein 0.15s ease;
+}
+
+.le.sys  { color: #333; }
+.le.call { color: #F5D800; }
+.le.res  { color: #4CAF50; }
+.le.think{ color: #666; font-style: italic; }
+.le.err  { color: #E63329; }
+
+/* MOBILE */
+@media (max-width: 780px) {
+  body { overflow: auto; }
+  .shell {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+  }
+  .left {
+    padding: 28px 24px 20px;
+    overflow: visible;
+  }
+  .wordmark, .wordmark-ai { font-size: 72px; }
+  .jeepney-wrap { display: none; }
+  .agent-log-section { display: none; }
+  .right { height: 100svh; position: sticky; top: 0; }
+  .mode-bar { padding: 16px 20px 0; }
+  .empty-state { padding: 24px 20px 16px; }
+  .big-question { font-size: 48px; }
+  .msg-user, .msg-bot-wrap { padding: 16px 20px; }
+  .input-bar { padding: 12px 20px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="rainbow"></div>
+
+<div class="shell">
+
+  <!-- ── LEFT ── -->
+  <div class="left">
+    <div class="wordmark">SAK<br>AY</div>
+    <div class="wordmark-ai">AI<span class="wordmark-dot">.</span></div>
+
+    <div class="sub-tag">Transit AI — Metro Manila</div>
+
+    <div class="left-desc">
+      Cheapest, fastest route via<br>
+      MRT, LRT, Jeepney &amp; Bus.
+    </div>
+
+    <div class="fares-label">Live Fares</div>
+
+    <div class="fare-row">
+      <div class="fare-dot mrt"></div>
+      <div class="fare-name">MRT-3 · 13 stops</div>
+      <div class="fare-price">₱13–28</div>
+    </div>
+    <div class="fare-row">
+      <div class="fare-dot lrt1"></div>
+      <div class="fare-name">LRT-1 · 20 stops</div>
+      <div class="fare-price">₱12–30</div>
+    </div>
+    <div class="fare-row">
+      <div class="fare-dot lrt2"></div>
+      <div class="fare-name">LRT-2 · 11 stops</div>
+      <div class="fare-price">₱12–24</div>
+    </div>
+    <div class="fare-row" style="border-bottom:none">
+      <div class="fare-dot jeep"></div>
+      <div class="fare-name">Jeep · All NCR</div>
+      <div class="fare-price">₱13+</div>
+    </div>
+
+        <!-- AGENT LOG -->
+    <div class="agent-log-section">
+      <div class="log-head">
+        <span>Agent Activity</span>
+        <span class="log-live" id="logLive">
+          <span class="log-live-dot"></span>
+          <span id="logStatus">idle</span>
+        </span>
+      </div>
+      <div class="log-body" id="agentLog">
+        <div class="le sys">// SakayAI agent initialized</div>
+        <div class="le sys">// Tools: lookup_route, calculate_fare,</div>
+        <div class="le sys">//   estimate_travel_time, check_transfer_options</div>
+        <div class="le sys">// Awaiting query...</div>
+      </div>
+    </div>
+
+    <!-- JEEPNEY SVG -->
+    <div class="jeepney-wrap">
+      <svg class="jeepney-svg" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+        <!-- Body -->
+        <rect x="10" y="55" width="280" height="75" rx="10" fill="#E63329"/>
+        <!-- Roof extension -->
+        <rect x="30" y="40" width="240" height="25" rx="6" fill="#E63329"/>
+        <!-- Roof top stripe -->
+        <rect x="30" y="38" width="240" height="6" rx="3" fill="#F5D800"/>
+        <!-- Front grill area -->
+        <rect x="10" y="55" width="42" height="75" rx="10" fill="#C0241C"/>
+        <!-- Windshield -->
+        <rect x="15" y="60" width="32" height="30" rx="4" fill="#B8D4F0" opacity="0.8"/>
+        <!-- Windows right side -->
+        <rect x="72" y="62" width="45" height="32" rx="3" fill="#B8D4F0" opacity="0.8"/>
+        <rect x="127" y="62" width="45" height="32" rx="3" fill="#B8D4F0" opacity="0.8"/>
+        <rect x="182" y="62" width="45" height="32" rx="3" fill="#B8D4F0" opacity="0.8"/>
+        <!-- Back -->
+        <rect x="268" y="60" width="20" height="40" rx="4" fill="#C0241C"/>
+        <!-- Origin/dest labels on body -->
+        <rect x="55" y="100" width="90" height="18" rx="2" fill="#F5D800"/>
+        <text x="100" y="113" font-family="'Space Mono', monospace" font-size="8" font-weight="700" fill="#1A1A1A" text-anchor="middle">PARANAQUE</text>
+        <rect x="175" y="100" width="75" height="18" rx="2" fill="#F5D800"/>
+        <text x="212" y="113" font-family="'Space Mono', monospace" font-size="8" font-weight="700" fill="#1A1A1A" text-anchor="middle">CUBAO</text>
+        <!-- Bottom labels -->
+        <text x="80" y="142" font-family="'Bebas Neue', sans-serif" font-size="11" fill="#F5D800" text-anchor="middle">SAKAY</text>
+        <text x="230" y="142" font-family="'Bebas Neue', sans-serif" font-size="11" fill="#F5D800" text-anchor="middle">AI</text>
+        <!-- Wheels -->
+        <circle cx="70" cy="133" r="16" fill="#222"/>
+        <circle cx="70" cy="133" r="9" fill="#444"/>
+        <circle cx="70" cy="133" r="4" fill="#888"/>
+        <circle cx="240" cy="133" r="16" fill="#222"/>
+        <circle cx="240" cy="133" r="9" fill="#444"/>
+        <circle cx="240" cy="133" r="4" fill="#888"/>
+        <!-- Headlight -->
+        <circle cx="22" cy="108" r="6" fill="#F5D800" opacity="0.9"/>
+        <!-- Taillight -->
+        <circle cx="285" cy="108" r="5" fill="#FF8080" opacity="0.9"/>
+        <!-- Chrome bumper lines -->
+        <rect x="10" y="118" width="5" height="4" rx="1" fill="#999"/>
+        <rect x="10" y="124" width="5" height="4" rx="1" fill="#999"/>
+        <!-- Decorative stripes on body -->
+        <rect x="55" y="56" width="220" height="4" fill="#F5D800" opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+    <!-- ── RIGHT ── -->
+  <div class="right">
+
+
+    <!-- MODE TOGGLE -->
+    <div class="mode-bar">
+      <button class="mode-btn active" onclick="setMode(this,'cheapest')">Cheapest</button>
+      <button class="mode-btn" onclick="setMode(this,'fastest')">Fastest</button>
+      <button class="mode-btn" onclick="setMode(this,'least_transfers')">Least Transfers</button>
+    </div>
+
+    <!-- CHAT / EMPTY -->
+    <div class="chat-area" id="chatArea">
+      <div class="empty-state" id="emptyState">
+        <div class="big-question">
+          SAAN KA
+          <span>PUPUNTA?</span>
+        </div>
+        <div class="empty-desc">
+          Tell me where you're going, your budget,<br>
+          and I'll route you there.
+        </div>
+
+        <div class="try-label">Try these:</div>
+        <div class="route-chips">
+          <button class="route-chip" onclick="fillAndSend('Paranaque to Cubao, ₱80')">
+            <span class="chip-icon">🚌</span>
+            <span class="chip-text">Paranaque to Cubao, ₱80</span>
+            <span class="chip-arrow">→</span>
+          </button>
+          <button class="route-chip" onclick="fillAndSend('Las Piñas to Ortigas, ₱60')">
+            <span class="chip-icon">🚊</span>
+            <span class="chip-text">Las Piñas to Ortigas, ₱60</span>
+            <span class="chip-arrow">→</span>
+          </button>
+          <button class="route-chip" onclick="fillAndSend('Pasay to Quezon Ave, ₱50')">
+            <span class="chip-icon">🚇</span>
+            <span class="chip-text">Pasay to Quezon Ave, ₱50</span>
+            <span class="chip-arrow">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-bar">
+      <textarea
+        class="input-field"
+        id="userInput"
+        placeholder="Where are you going?"
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoGrow(this)"
+      ></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">▶</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- routes_db.js and agent_tools.js now run server-side only -->
+<script>
+// ── CONFIG ────────────────────────────────────────
+// All AI logic runs on the server (server.js).
+// The browser just sends messages to /api/chat and renders responses.
+
+// ── STATE ─────────────────────────────────────────
+let conversationHistory = [];
+let isLoading = false;
+let routeMode = 'cheapest';
+
+// ── SYSTEM PROMPT ─────────────────────────────────
+const SYSTEM_PROMPT = `You are SakayAI, an agentic Metro Manila commute planning assistant.
+You have 4 real tools. Use them to plan routes — never guess fares or times.
+
+BEHAVIOR:
+1. Call lookup_route first to find available routes.
+2. Call calculate_fare for each segment.
+3. Call estimate_travel_time for each segment.
+4. Call check_transfer_options for any hub where a transfer is needed.
+5. After gathering all results, write the final response.
+
+ROUTE MODE: The user has selected "{MODE}" — optimize for this.
+- cheapest: minimize total fare
+- fastest: minimize total time even if more expensive
+- least_transfers: minimize number of line changes
+
+RESPONSE FORMAT:
+Write 1–2 sentences intro, then output this exact block:
+
+ROUTE_JSON:
+{
+  "title": "Parañaque → Cubao",
+  "totalFare": 51,
+  "totalTime": 65,
+  "transfers": 2,
+  "steps": [
+    {"type":"jeep","label":"Jeepney to Baclaran","detail":"Paranaque Central → LRT-1 Baclaran terminal","fare":15,"time":25},
+    {"type":"lrt","label":"LRT-1 to EDSA","detail":"Baclaran → EDSA Pasay · 2 stops","fare":12,"time":8},
+    {"type":"walk","label":"Transfer to MRT-3","detail":"~200m covered walkway to Taft Ave","fare":0,"time":5},
+    {"type":"mrt","label":"MRT-3 to Cubao","detail":"Taft Ave → Araneta-Cubao · 10 stops","fare":24,"time":22}
+  ]
+}
+
+Types: mrt, lrt, jeep, bus, walk
+Use EXACT tool-returned values. Be direct, warm, a bit of Taglish is fine.`;
+
+// ── MODE ──────────────────────────────────────────
+function setMode(btn, mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  routeMode = mode;
+}
+
+// ── CALL SERVER ───────────────────────────────────
+async function runAgentLoop() {
+  log('think', '// sending to server...');
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: conversationHistory, mode: routeMode })
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || 'Server error ' + res.status);
+  // Show tool call log from server
+  (data.toolLog || []).forEach(entry => log(entry.type === 'call' ? 'call' : entry.type === 'result' ? 'res' : 'err', entry.text));
+  log('sys', '// done — rendering response');
+  return data.text;
+}
+
+// ── SEND ──────────────────────────────────────────
+async function sendMessage() {
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim();
+  if (!text || isLoading) return;
+
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('emptyState')?.remove();
+
+  addUserMsg(text);
+  conversationHistory.push({ role: 'user', parts: [{ text }] });
+
+  const typId = addTyping();
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+  setLogActive(true);
+  log('sys', `// query: "${text.slice(0,55)}${text.length>55?'...':''}"`);
+
+  try {
+    const reply = await runAgentLoop();
+    removeEl(typId);
+    renderReply(reply);
+    conversationHistory.push({ role: 'model', parts: [{ text: reply }] });
+  } catch(e) {
+    removeEl(typId);
+    addBotMsg(`<div class="err-msg">⚠ ${esc(e.message)}</div>`);
+    log('err', '// ' + e.message);
+  } finally {
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    setLogActive(false);
+    inp.focus();
+  }
+}
+
+function fillAndSend(text) {
+  document.getElementById('userInput').value = text;
+  sendMessage();
+}
+
+// ── RENDER ────────────────────────────────────────
+function renderReply(text) {
+  const m = text.match(/ROUTE_JSON:\s*(\{[\s\S]*\})/);
+  if (m) {
+    try {
+      const route = JSON.parse(m[1]);
+      const before = text.slice(0, text.indexOf('ROUTE_JSON:')).trim();
+      const after  = text.slice(text.indexOf('ROUTE_JSON:') + m[0].length).trim();
+      let html = '';
+      if (before) html += '<p>' + md(before) + '</p>';
+      html += buildCard(route);
+      if (after) html += '<p style="margin-top:12px;font-size:12px;color:#999;">' + md(after) + '</p>';
+      addBotMsg(html);
+      return;
+    } catch(e) {}
+  }
+  addBotMsg('<p>' + md(text) + '</p>');
+}
+
+const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', walk:'WALK', p2p:'P2P' };
+
+function buildCard(d) {
+  const steps = (d.steps||[]).map(s => {
+    const t = (s.type||'walk').toLowerCase().replace(/[^a-z]/g,'');
+    const cls = ['mrt','lrt','jeep','bus'].includes(t) ? t : 'walk';
+    return `<div class="step-row">
+      <div class="step-badge ${cls}">${modeMap[t]||'WALK'}</div>
+      <div class="step-info">
+        <div class="step-lbl">${s.label||''}</div>
+        <div class="step-sub">${s.detail||''} · ${s.time||0} min</div>
+      </div>
+      <div class="step-fare">${s.fare>0?'₱'+s.fare:'—'}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="route-card">
+    <div class="rc-header">
+      <div class="rc-title">${d.title||'Your Route'}</div>
+      <div class="rc-meta">${d.transfers||0} transfer${d.transfers!==1?'s':''}</div>
+    </div>
+    ${steps}
+    <div class="rc-totals">
+      <div class="total-cell">
+        <div class="total-val red">₱${d.totalFare||0}</div>
+        <div class="total-lbl">Total Fare</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-val green">${d.totalTime||0}<span style="font-size:16px">min</span></div>
+        <div class="total-lbl">Est. Time</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-val">${d.transfers||0} XFR</div>
+        <div class="total-lbl">Transfers</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── DOM ───────────────────────────────────────────
+function addUserMsg(text) {
+  const el = mk(`<div class="msg-user">${esc(text)}</div>`);
+  app(el);
+}
+
+function addBotMsg(html) {
+  const el = mk(`<div class="msg-bot-wrap">${html}</div>`);
+  app(el);
+}
+
+function addTyping() {
+  const id = 'typ-' + Date.now();
+  const el = mk(`<div class="typing-wrap" id="${id}">
+    <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+  </div>`);
+  app(el);
+  return id;
+}
+
+function mk(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html.trim();
+  return d.firstChild;
+}
+
+function app(el) {
+  const area = document.getElementById('chatArea');
+  area.appendChild(el);
+  setTimeout(() => area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }), 40);
+}
+
+function removeEl(id) { document.getElementById(id)?.remove(); }
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function md(t) {
+  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+// ── AGENT LOG ─────────────────────────────────────
+function log(type, text) {
+  const body = document.getElementById('agentLog');
+  const el = document.createElement('div');
+  el.className = 'le ' + type;
+  el.textContent = text;
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+}
+
+function setLogActive(on) {
+  const ind = document.getElementById('logLive');
+  const stat = document.getElementById('logStatus');
+  if (on) { ind.classList.add('on'); stat.textContent = 'running'; }
+  else { ind.classList.remove('on'); stat.textContent = 'idle'; }
+}
+</script>
+</body>
+</html>
