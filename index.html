@@ -349,6 +349,7 @@ body {
 .step-badge.bus  { background: #F0EEFF; color: #5533AA; border: 1px solid #D0C8F5; }
 .step-badge.walk { background: #F5F5F5; color: #666; border: 1px solid #DDD; }
 
+.step-info {}
 .step-lbl { font-size: 13px; font-weight: 700; color: #111; line-height: 1.3; }
 .step-sub { font-size: 10px; color: #AAA; margin-top: 2px; }
 
@@ -599,7 +600,7 @@ body {
       <div class="fare-price">₱13+</div>
     </div>
 
-        <!-- AGENT LOG -->
+    <!-- AGENT LOG -->
     <div class="agent-log-section">
       <div class="log-head">
         <span>Agent Activity</span>
@@ -663,9 +664,8 @@ body {
     </div>
   </div>
 
-    <!-- ── RIGHT ── -->
+  <!-- ── RIGHT ── -->
   <div class="right">
-
 
     <!-- MODE TOGGLE -->
     <div class="mode-bar">
@@ -779,17 +779,46 @@ function setMode(btn, mode) {
 
 // ── CALL SERVER ───────────────────────────────────
 async function runAgentLoop() {
-  log('think', '// sending to server...');
+  log('think', '// pipeline running...');
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: conversationHistory, mode: routeMode })
+    body: JSON.stringify({
+      message: conversationHistory[conversationHistory.length - 1]?.text || '',
+      history: conversationHistory.slice(0, -1).map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+      mode: routeMode
+    })
   });
-  const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error || 'Server error ' + res.status);
-  // Show tool call log from server
-  (data.toolLog || []).forEach(entry => log(entry.type === 'call' ? 'call' : entry.type === 'result' ? 'res' : 'err', entry.text));
-  log('sys', '// done — rendering response');
+  
+  // Check if response is ok first
+  if (!res.ok) {
+    throw new Error(`Server error ${res.status}: ${res.statusText}`);
+  }
+  
+  let data;
+  try {
+    data = await res.json();
+  } catch (parseError) {
+    throw new Error('Invalid response from server (JSON parse error)');
+  }
+  
+  // Check for error in response
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  
+  if (!data.text) {
+    throw new Error('Empty response from server');
+  }
+  
+  // Show pipeline stages in the log
+  (data.pipelineLog || []).forEach(entry => {
+    if (entry.stage === 'resolve') log('call', `→ resolve_locations("${entry.data.origin}", "${entry.data.destination}")`);
+    if (entry.stage === 'paths')   log('res',  `← list_paths: ${entry.data.length} path(s) found: ${entry.data.join(', ')}`);
+    if (entry.stage === 'fares')   log('call', `→ read_path + get_context: ${entry.data.map(p=>`${p.id} ₱${p.fare} ${p.min}min`).join(' | ')}`);
+    if (entry.stage === 'ranked')  log('res',  `← recommended: ${entry.data.recommended}`);
+  });
+  log('sys', '// Gemini narrating verified data...');
   return data.text;
 }
 
@@ -804,7 +833,7 @@ async function sendMessage() {
   document.getElementById('emptyState')?.remove();
 
   addUserMsg(text);
-  conversationHistory.push({ role: 'user', parts: [{ text }] });
+  conversationHistory.push({ role: 'user', text });
 
   const typId = addTyping();
   isLoading = true;
@@ -816,7 +845,7 @@ async function sendMessage() {
     const reply = await runAgentLoop();
     removeEl(typId);
     renderReply(reply);
-    conversationHistory.push({ role: 'model', parts: [{ text: reply }] });
+    conversationHistory.push({ role: 'model', text: reply });
   } catch(e) {
     removeEl(typId);
     addBotMsg(`<div class="err-msg">⚠ ${esc(e.message)}</div>`);

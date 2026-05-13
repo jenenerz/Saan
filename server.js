@@ -4,412 +4,479 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// ── OPTIMIZATION 1 & 2: CACHE & CONFIG ────────────
-const ROUTE_CACHE = new Map(); // Cache for lookup_route results
-const CACHE_TTL = 3600000; // 1 hour TTL
-const API_TIMEOUT = 30000; // 30 second timeout for Gemini API
-
-// ── OPTIMIZATION 3: TRIM CONVERSATION HISTORY ──────
-function trimConversationHistory(messages) {
-  if (messages.length <= 6) return messages; // Keep if 3 or fewer exchanges
-  // Keep system context + last 3 message exchanges (6 messages max)
-  return messages.slice(-6);
-}
-
-// ── OPTIMIZATION 2: CACHE KEY GENERATOR ────────────
-function getCacheKey(origin, destination, mode) {
-  const norm = s => (ROUTES_DB.aliases[s.toLowerCase()] || s).toLowerCase();
-  return `${norm(origin)}→${norm(destination)}|${mode}`;
-}
-
-// ── MIME TYPES ────────────────────────────────────
 const MIME = {
-  '.html': 'text/html',
-  '.js':   'application/javascript',
-  '.css':  'text/css',
-  '.json': 'application/json',
-  '.ico':  'image/x-icon',
+  '.html': 'text/html', '.js': 'application/javascript',
+  '.css': 'text/css', '.json': 'application/json', '.ico': 'image/x-icon'
 };
 
-// ── ROUTE DATABASE (same data as routes_db.js) ────
-const ROUTES_DB = {
+const DB = {
+  aliases: {
+    "paranaque":"Paranaque","parañaque":"Paranaque","para":"Paranaque",
+    "las pinas":"Las Pinas","las piñas":"Las Pinas","laspinas":"Las Pinas",
+    "cubao":"Cubao","araneta":"Cubao","araneta cubao":"Cubao",
+    "makati":"Makati","ayala":"Makati",
+    "bgc":"BGC","bonifacio":"BGC","bonifacio global city":"BGC","taguig":"BGC","fort":"BGC",
+    "quiapo":"Quiapo","manila":"Manila","divisoria":"Manila",
+    "alabang":"Alabang","muntinlupa":"Alabang",
+    "monumento":"Monumento","caloocan":"Monumento",
+    "sm north":"SM North","sm north edsa":"SM North","north edsa":"SM North",
+    "ortigas":"Ortigas","pasig":"Ortigas",
+    "marikina":"Marikina","santolan":"Marikina",
+    "antipolo":"Antipolo","cainta":"Antipolo",
+    "novaliches":"Novaliches","fairview":"Novaliches","commonwealth":"Novaliches",
+    "baclaran":"Baclaran","pasay":"Baclaran",
+    "recto":"Quiapo",
+    "qc":"Quezon City","quezon city":"Quezon City",
+    "katipunan":"Katipunan","ateneo":"Katipunan","up":"Katipunan",
+    "mandaluyong":"Mandaluyong","shaw":"Mandaluyong",
+    "san juan":"San Juan","greenhills":"San Juan"
+  },
+  areas: {
+    "Paranaque":   { hub:"Baclaran",        hubLine:"LRT-1", hubMin:25, hubKm:6,  hubMode:"jeepney" },
+    "Las Pinas":   { hub:"Baclaran",        hubLine:"LRT-1", hubMin:30, hubKm:7,  hubMode:"jeepney" },
+    "Alabang":     { hub:"Alabang",         hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Makati":      { hub:"Ayala",           hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
+    "BGC":         { hub:"Ayala",           hubLine:"MRT-3", hubMin:15, hubKm:3,  hubMode:"jeepney" },
+    "Ortigas":     { hub:"Ortigas",         hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
+    "Mandaluyong": { hub:"Shaw Boulevard",  hubLine:"MRT-3", hubMin:8,  hubKm:2,  hubMode:"jeepney" },
+    "San Juan":    { hub:"Shaw Boulevard",  hubLine:"MRT-3", hubMin:12, hubKm:3,  hubMode:"jeepney" },
+    "Quiapo":      { hub:"Doroteo Jose",    hubLine:"LRT-1", hubMin:10, hubKm:2,  hubMode:"jeepney" },
+    "Manila":      { hub:"Central Terminal",hubLine:"LRT-1", hubMin:12, hubKm:3,  hubMode:"jeepney" },
+    "Monumento":   { hub:"Monumento",       hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "SM North":    { hub:"North Avenue",    hubLine:"MRT-3", hubMin:5,  hubKm:1,  hubMode:"walk"    },
+    "Quezon City": { hub:"Quezon Avenue",   hubLine:"MRT-3", hubMin:8,  hubKm:2,  hubMode:"jeepney" },
+    "Novaliches":  { hub:"North Avenue",    hubLine:"MRT-3", hubMin:45, hubKm:10, hubMode:"jeepney" },
+    "Cubao":       { hub:"Araneta-Cubao",   hubLine:"MRT-3", hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Marikina":    { hub:"Santolan",        hubLine:"LRT-2", hubMin:15, hubKm:4,  hubMode:"jeepney" },
+    "Antipolo":    { hub:"Santolan",        hubLine:"LRT-2", hubMin:30, hubKm:8,  hubMode:"jeepney" },
+    "Katipunan":   { hub:"Katipunan",       hubLine:"LRT-2", hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Baclaran":    { hub:"Baclaran",        hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  }
+  },
   mrt3: {
-    name: "MRT-3",
-    stations: ["Taft Avenue","Magallanes","Ayala","Buendia","Guadalupe","Boni","Shaw Boulevard","Ortigas","Santolan","Araneta-Cubao","GMA-Kamuning","Quezon Avenue","North Avenue"],
-    farePerStops: {1:13,2:13,3:15,4:16,5:18,6:20,7:22,8:24,9:26,10:28,11:28,12:28},
-    avgMinPerStop: 2.5
+    name:"MRT-3",
+    stations:["Taft Avenue","Magallanes","Ayala","Buendia","Guadalupe","Boni","Shaw Boulevard","Ortigas","Santolan","Araneta-Cubao","GMA-Kamuning","Quezon Avenue","North Avenue"],
+    fare:{1:13,2:13,3:15,4:16,5:18,6:20,7:22,8:24,9:26,10:28,11:28,12:28},
+    minPerStop:2.5
   },
   lrt1: {
-    name: "LRT-1",
-    stations: ["Baclaran","EDSA","Libertad","Gil Puyat","Vito Cruz","Quirino","Pedro Gil","Central Terminal","UN Avenue","Carriedo","Doroteo Jose","Bambang","Tayuman","Blumentritt","Abad Santos","R. Papa","5th Avenue","Monumento"],
-    farePerStops: {1:12,2:12,3:13,4:14,5:15,6:16,7:17,8:18,9:19,10:20,11:21,12:22,13:24,14:26,15:28,16:30,17:30},
-    avgMinPerStop: 2.8
+    name:"LRT-1",
+    stations:["Baclaran","EDSA","Libertad","Gil Puyat","Vito Cruz","Quirino","Pedro Gil","Central Terminal","UN Avenue","Carriedo","Doroteo Jose","Bambang","Tayuman","Blumentritt","Abad Santos","R. Papa","5th Avenue","Monumento"],
+    fare:{1:12,2:12,3:13,4:14,5:15,6:16,7:17,8:18,9:19,10:20,11:21,12:22,13:24,14:26,15:28,16:30,17:30},
+    minPerStop:2.8
   },
   lrt2: {
-    name: "LRT-2",
-    stations: ["Recto","Legarda","Pureza","V. Mapa","J. Ruiz","Gilmore","Betty Go-Belmonte","Araneta-Cubao","Anonas","Katipunan","Santolan"],
-    farePerStops: {1:12,2:12,3:13,4:14,5:15,6:16,7:17,8:18,9:20,10:22},
-    avgMinPerStop: 3
+    name:"LRT-2",
+    stations:["Recto","Legarda","Pureza","V. Mapa","J. Ruiz","Gilmore","Betty Go-Belmonte","Araneta-Cubao","Anonas","Katipunan","Santolan"],
+    fare:{1:12,2:12,3:13,4:14,5:15,6:16,7:17,8:18,9:20,10:22},
+    minPerStop:3
   },
-  jeepneyRoutes: [
-    {id:"J01",from:["Paranaque","Las Pinas","Paranaque Central","BF Homes"],to:["Baclaran","LRT Baclaran"],via:"Quirino Ave",estKm:6,estMin:25},
-    {id:"J02",from:["Alabang","Muntinlupa"],to:["Zapote","Las Pinas"],via:"Alabang-Zapote Rd",estKm:5,estMin:20},
-    {id:"J03",from:["Cubao","Araneta"],to:["Quiapo","Manila"],via:"Aurora Blvd",estKm:7,estMin:35},
-    {id:"J04",from:["Makati","Ayala","BGC"],to:["Baclaran","Pasay"],via:"EDSA",estKm:8,estMin:40},
-    {id:"J05",from:["Monumento","Caloocan"],to:["Divisoria","Quiapo"],via:"Rizal Ave",estKm:6,estMin:30},
-    {id:"J06",from:["Quiapo","Manila"],to:["Baclaran","Pasay"],via:"Taft Ave",estKm:7,estMin:35},
-    {id:"J07",from:["Marikina","Santolan"],to:["Cubao","Araneta"],via:"Marcos Highway",estKm:8,estMin:35},
-    {id:"J08",from:["BGC","Taguig"],to:["Ayala MRT","Makati"],via:"Kalayaan",estKm:3,estMin:15},
-    {id:"J09",from:["Novaliches","Fairview"],to:["Quezon Ave MRT","North Ave MRT"],via:"Commonwealth",estKm:10,estMin:45},
-    {id:"J10",from:["Antipolo","Cainta"],to:["Santolan LRT2","Cubao"],via:"Ortigas Ave",estKm:12,estMin:55},
-    {id:"J11",from:["Paranaque","Sucat"],to:["Taft Ave MRT","EDSA"],via:"South Luzon feeder",estKm:9,estMin:40},
-    {id:"J12",from:["Pasig","Ortigas"],to:["Cubao","Araneta"],via:"EDSA",estKm:5,estMin:25}
-  ],
-  p2pRoutes: [
-    {id:"P01",from:["Alabang","Muntinlupa"],to:["BGC","Taguig"],fare:80,estMin:45},
-    {id:"P02",from:["Alabang","Muntinlupa"],to:["Makati","Ayala"],fare:70,estMin:40},
-    {id:"P03",from:["Paranaque","BF Homes"],to:["BGC","Taguig"],fare:65,estMin:35},
-    {id:"P04",from:["Las Pinas","Pamplona"],to:["Makati","Ayala"],fare:65,estMin:45},
-    {id:"P05",from:["Cubao","Araneta"],to:["BGC","Taguig"],fare:85,estMin:40},
-    {id:"P06",from:["Novaliches"],to:["Makati","Ayala"],fare:90,estMin:60}
-  ],
-  transferHubs: {
-    "Baclaran":{"lines":["LRT-1"],"note":"Main southern LRT-1 terminal"},
-    "Taft Avenue MRT":{"lines":["MRT-3"],"nearbyLines":["LRT-1 EDSA/Baclaran (200m walk)"],"note":"Southern MRT-3 terminal. Walk south 200m to LRT-1"},
-    "Araneta-Cubao":{"lines":["MRT-3","LRT-2"],"note":"Direct interchange between MRT-3 and LRT-2"},
-    "Doroteo Jose":{"lines":["LRT-1"],"nearbyLines":["LRT-2 Recto (short walk)"],"note":"Transfer point between LRT-1 and LRT-2"},
-    "Monumento":{"lines":["LRT-1"],"note":"Northern LRT-1 terminal"},
-    "North Avenue MRT":{"lines":["MRT-3"],"note":"Northern MRT-3 terminal"}
-  },
-  aliases: {
-    "paranaque":"Paranaque","parañaque":"Paranaque","las piñas":"Las Pinas","las pinas":"Las Pinas",
-    "cubao":"Cubao","araneta":"Cubao","makati":"Makati","bgc":"BGC","bonifacio global city":"BGC",
-    "taguig":"BGC","quiapo":"Quiapo","manila":"Manila","alabang":"Alabang","muntinlupa":"Alabang",
-    "monumento":"Monumento","caloocan":"Monumento","sm north":"North Avenue MRT",
-    "sm north edsa":"North Avenue MRT","quezon city":"Quezon Avenue","qc":"Quezon Avenue",
-    "pasig":"Pasig","ortigas":"Ortigas","marikina":"Marikina","antipolo":"Antipolo",
-    "novaliches":"Novaliches","fairview":"Novaliches","baclaran":"Baclaran","pasay":"Baclaran",
-    "taft":"Taft Avenue"
-  }
+  p2p: [
+    { from:"Alabang",   to:"BGC",    fare:80, min:45 },
+    { from:"Alabang",   to:"Makati", fare:70, min:40 },
+    { from:"Paranaque", to:"BGC",    fare:65, min:35 },
+    { from:"Las Pinas", to:"Makati", fare:65, min:45 },
+    { from:"Cubao",     to:"BGC",    fare:85, min:40 },
+    { from:"Novaliches",to:"Makati", fare:90, min:60 }
+  ]
 };
 
-// ── AGENT TOOLS (server-side) ─────────────────────
-const AgentTools = {
-  lookup_route(origin, destination) {
-    const norm = s => (ROUTES_DB.aliases[s.toLowerCase()] || s).toLowerCase();
-    const o = norm(origin), d = norm(destination);
-    const results = { rail:[], jeepney:[], p2p:[], transfers:[] };
+// ── STAGE 1: resolve_locations ────────────────────
+function resolveLocations(originRaw, destinationRaw) {
+  const normalize = (input) => {
+    const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
+    if (DB.aliases[clean]) return DB.aliases[clean];
+    for (const [alias, name] of Object.entries(DB.aliases)) {
+      if (clean.includes(alias) || alias.includes(clean)) return name;
+    }
+    for (const area of Object.keys(DB.areas)) {
+      if (clean.includes(area.toLowerCase())) return area;
+    }
+    return input.trim().replace(/\b\w/g, c => c.toUpperCase());
+  };
+  const origin      = normalize(originRaw);
+  const destination = normalize(destinationRaw);
+  return {
+    originRaw, destinationRaw, origin, destination,
+    originKnown: !!DB.areas[origin],
+    destKnown:   !!DB.areas[destination],
+    originArea:  DB.areas[origin]      || null,
+    destArea:    DB.areas[destination] || null
+  };
+}
 
-    for (const [key, line] of Object.entries({mrt3:ROUTES_DB.mrt3,lrt1:ROUTES_DB.lrt1,lrt2:ROUTES_DB.lrt2})) {
-      const oi = line.stations.findIndex(s => s.toLowerCase().includes(o) || o.includes(s.toLowerCase()));
-      const di = line.stations.findIndex(s => s.toLowerCase().includes(d) || d.includes(s.toLowerCase()));
-      if (oi !== -1 && di !== -1) {
-        results.rail.push({ line: line.name, from: line.stations[oi], to: line.stations[di], stops: Math.abs(di-oi) });
-      }
-    }
-    ROUTES_DB.jeepneyRoutes.forEach(r => {
-      if (r.from.some(f => f.toLowerCase().includes(o)||o.includes(f.toLowerCase())) &&
-          r.to.some(t => t.toLowerCase().includes(d)||d.includes(t.toLowerCase()))) {
-        results.jeepney.push({route:r.id,from:r.from[0],to:r.to[0],via:r.via,estKm:r.estKm,estMin:r.estMin});
-      }
-    });
-    ROUTES_DB.p2pRoutes.forEach(r => {
-      if (r.from.some(f => f.toLowerCase().includes(o)||o.includes(f.toLowerCase())) &&
-          r.to.some(t => t.toLowerCase().includes(d)||d.includes(t.toLowerCase()))) {
-        results.p2p.push({route:r.id,from:r.from[0],to:r.to[0],fare:r.fare,estMin:r.estMin});
-      }
-    });
-    const found = results.rail.length + results.jeepney.length + results.p2p.length > 0;
-    return { query:{origin,destination}, found, results,
-      suggestion: found ? null : `No direct route found. Consider hubs: Baclaran (LRT-1), Taft Ave (MRT-3), Araneta-Cubao (MRT-3/LRT-2).` };
-  },
+// ── STAGE 2: list_paths ───────────────────────────
+function listPaths(resolved) {
+  const { origin, destination, originArea, destArea } = resolved;
+  const paths = [];
 
-  calculate_fare(mode, stops_or_km) {
-    const n = parseFloat(stops_or_km) || 1;
-    if (mode === 'MRT-3') {
-      const fare = ROUTES_DB.mrt3.farePerStops[Math.min(n,12)] || 28;
-      return { mode, fare, breakdown:`MRT-3: ${n} stops → ₱${fare}` };
-    }
-    if (mode === 'LRT-1') {
-      const fare = ROUTES_DB.lrt1.farePerStops[Math.min(n,17)] || 30;
-      return { mode, fare, breakdown:`LRT-1: ${n} stops → ₱${fare}` };
-    }
-    if (mode === 'LRT-2') {
-      const fare = ROUTES_DB.lrt2.farePerStops[Math.min(n,10)] || 22;
-      return { mode, fare, breakdown:`LRT-2: ${n} stops → ₱${fare}` };
-    }
-    if (mode === 'jeepney') {
-      const fare = n <= 4 ? 13 : Math.ceil(13 + (n-4)*1.80);
-      return { mode, fare, breakdown:`Jeepney: ${n}km → ₱${fare}` };
-    }
-    if (mode === 'p2p') return { mode, fare: n, breakdown:`P2P: fixed ₱${n}` };
-    if (mode === 'walk') return { mode, fare: 0, breakdown:'Walking: free' };
-    return { mode, fare: 13, breakdown:'Unknown mode, minimum fare' };
-  },
+  const stationIdx = (line, hub) =>
+    line.stations.findIndex(s =>
+      s.toLowerCase().includes(hub.toLowerCase()) ||
+      hub.toLowerCase().includes(s.toLowerCase().split(' ')[0])
+    );
 
-  estimate_travel_time(mode, stops_or_km, time_of_day) {
-    const n = parseFloat(stops_or_km) || 1;
-    const isPeak = ['morning rush','peak','rush hour','7am','8am','5pm','6pm','7pm'].some(p =>
-      (time_of_day||'').toLowerCase().includes(p));
-    let mins = 0, note = '';
-    if (mode==='MRT-3')  { mins = n*2.5+5; if(isPeak) note='Peak: expect longer queues (+3-5 min)'; }
-    else if (mode==='LRT-1') { mins = n*2.8+5; if(isPeak) note='Peak: LRT-1 very crowded'; }
-    else if (mode==='LRT-2') { mins = n*3+4; }
-    else if (mode==='jeepney') { mins = (n/0.5)*(isPeak?1.5:1); if(isPeak) note='Peak traffic can double jeepney time'; }
-    else if (mode==='walk')   { mins = n*12; }
-    else if (mode==='p2p')    { mins = n*(isPeak?1.3:1); }
-    else if (mode==='transfer') { mins = n; }
-    return { mode, estimatedMinutes: Math.ceil(mins), isPeak, note };
-  },
-
-  check_transfer_options(station) {
-    const norm = station.toLowerCase();
-    for (const [hub, info] of Object.entries(ROUTES_DB.transferHubs)) {
-      if (hub.toLowerCase().includes(norm) || norm.includes(hub.toLowerCase().split(' ')[0])) {
-        return { station, found:true, availableLines:info.lines, nearbyLines:info.nearbyLines||[], note:info.note };
-      }
-    }
-    for (const [, line] of Object.entries({mrt3:ROUTES_DB.mrt3,lrt1:ROUTES_DB.lrt1,lrt2:ROUTES_DB.lrt2})) {
-      const found = line.stations.find(s => s.toLowerCase().includes(norm)||norm.includes(s.toLowerCase()));
-      if (found) return { station:found, found:true, availableLines:[line.name], note:`${found} is on ${line.name}.` };
-    }
-    return { station, found:false, note:`No hub data for "${station}". Nearest: Araneta-Cubao, Taft Ave MRT, Baclaran LRT-1.` };
+  // P2P direct
+  const p2pDirect = DB.p2p.find(r =>
+    (r.from === origin || r.from === originArea?.hub) &&
+    (r.to === destination || r.to === destArea?.hub)
+  );
+  if (p2pDirect) {
+    paths.push({ id:'P2P', type:'direct_p2p',
+      description:`P2P Bus ${origin} → ${destination}`,
+      segments:[{ mode:'p2p', from:origin, to:destination, fare:p2pDirect.fare, min:p2pDirect.min }],
+      transfers:0 });
   }
-};
 
-const TOOL_DEFINITIONS = [
-  { name:"lookup_route", description:"Search Manila transit DB for routes between origin and destination. Call this first.", parameters:{ type:"object", properties:{ origin:{type:"string"}, destination:{type:"string"} }, required:["origin","destination"] } },
-  { name:"calculate_fare", description:"Calculate exact LTFRB fare for a transit segment.", parameters:{ type:"object", properties:{ mode:{type:"string",enum:["MRT-3","LRT-1","LRT-2","jeepney","p2p","walk"]}, stops_or_km:{type:"number"} }, required:["mode","stops_or_km"] } },
-  { name:"estimate_travel_time", description:"Estimate travel time accounting for peak hours.", parameters:{ type:"object", properties:{ mode:{type:"string",enum:["MRT-3","LRT-1","LRT-2","jeepney","p2p","walk","transfer"]}, stops_or_km:{type:"number"}, time_of_day:{type:"string"} }, required:["mode","stops_or_km"] } },
-  { name:"check_transfer_options", description:"Check transit connections available at a station or hub.", parameters:{ type:"object", properties:{ station:{type:"string"} }, required:["station"] } }
-];
+  if (!originArea || !destArea) return paths;
 
-const SYSTEM_PROMPT = `You are SakayAI, an agentic Metro Manila commute planning assistant.
-Use your 4 tools to plan routes — never guess fares or times.
+  const lines = [{ data:DB.mrt3 },{ data:DB.lrt1 },{ data:DB.lrt2 }];
 
-BEHAVIOR:
-1. Call lookup_route first.
-2. Call calculate_fare for each segment.
-3. Call estimate_travel_time for each segment.
-4. Call check_transfer_options for hub transfers.
-5. After all tool results, write the final response.
+  // Same line direct
+  for (const { data: line } of lines) {
+    if (originArea.hubLine === line.name && destArea.hubLine === line.name) {
+      const oi = stationIdx(line, originArea.hub);
+      const di = stationIdx(line, destArea.hub);
+      if (oi !== -1 && di !== -1 && oi !== di) {
+        paths.push({
+          id:`${line.name}_DIRECT`, type:'rail_direct',
+          description:`${originArea.hubMode!=='origin'?originArea.hubMode+' + ':''}${line.name} direct`,
+          segments:[
+            ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+            {mode:line.name,from:line.stations[oi],to:line.stations[di],stops:Math.abs(di-oi),line:line.name},
+            ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+          ],
+          transfers:0
+        });
+      }
+    }
+  }
 
-ROUTE MODE: Optimize for "{MODE}" — cheapest=min fare, fastest=min time, least_transfers=min line changes.
+  // LRT-1 → MRT-3
+  if (originArea.hubLine==='LRT-1' && destArea.hubLine==='MRT-3') {
+    const oi=stationIdx(DB.lrt1,originArea.hub), edsa=stationIdx(DB.lrt1,'EDSA');
+    const taft=stationIdx(DB.mrt3,'Taft Avenue'), di=stationIdx(DB.mrt3,destArea.hub);
+    if (oi!==-1&&edsa!==-1&&taft!==-1&&di!==-1) {
+      paths.push({ id:'LRT1_MRT3', type:'rail_transfer',
+        description:'LRT-1 → transfer Taft Ave → MRT-3',
+        segments:[
+          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          {mode:'LRT-1',from:DB.lrt1.stations[oi],to:'EDSA',stops:Math.abs(edsa-oi),line:'LRT-1'},
+          {mode:'walk',from:'EDSA LRT-1',to:'Taft Avenue MRT-3',min:5,note:'~200m covered walkway'},
+          {mode:'MRT-3',from:'Taft Avenue',to:DB.mrt3.stations[di],stops:Math.abs(di-taft),line:'MRT-3'},
+          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+        ],
+        transfers:1 });
+    }
+  }
 
-RESPONSE FORMAT — after tool calls output exactly:
+  // MRT-3 → LRT-1
+  if (originArea.hubLine==='MRT-3' && destArea.hubLine==='LRT-1') {
+    const oi=stationIdx(DB.mrt3,originArea.hub), taft=stationIdx(DB.mrt3,'Taft Avenue');
+    const bac=stationIdx(DB.lrt1,'Baclaran'), di=stationIdx(DB.lrt1,destArea.hub);
+    if (oi!==-1&&taft!==-1&&bac!==-1&&di!==-1) {
+      paths.push({ id:'MRT3_LRT1', type:'rail_transfer',
+        description:'MRT-3 → transfer Taft Ave → LRT-1',
+        segments:[
+          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          {mode:'MRT-3',from:DB.mrt3.stations[oi],to:'Taft Avenue',stops:Math.abs(taft-oi),line:'MRT-3'},
+          {mode:'walk',from:'Taft Avenue MRT',to:'Baclaran LRT-1',min:5,note:'~200m covered walkway'},
+          {mode:'LRT-1',from:'Baclaran',to:DB.lrt1.stations[di],stops:Math.abs(di-bac),line:'LRT-1'},
+          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+        ],
+        transfers:1 });
+    }
+  }
 
-ROUTE_JSON:
-{"title":"Parañaque → Cubao","totalFare":51,"totalTime":65,"transfers":2,"steps":[
-  {"type":"jeep","label":"Jeepney to Baclaran","detail":"Paranaque Central → LRT-1 Baclaran","fare":15,"time":25},
-  {"type":"lrt","label":"LRT-1 to EDSA","detail":"Baclaran → EDSA Pasay · 2 stops","fare":12,"time":8},
-  {"type":"walk","label":"Transfer to MRT-3","detail":"~200m covered walkway to Taft Ave","fare":0,"time":5},
-  {"type":"mrt","label":"MRT-3 to Cubao","detail":"Taft Ave → Araneta-Cubao · 10 stops","fare":24,"time":22}
-]}
+  // MRT-3 → LRT-2
+  if (originArea.hubLine==='MRT-3' && destArea.hubLine==='LRT-2') {
+    const oi=stationIdx(DB.mrt3,originArea.hub), c3=stationIdx(DB.mrt3,'Araneta-Cubao');
+    const c2=stationIdx(DB.lrt2,'Araneta-Cubao'), di=stationIdx(DB.lrt2,destArea.hub);
+    if (oi!==-1&&c3!==-1&&c2!==-1&&di!==-1) {
+      paths.push({ id:'MRT3_LRT2', type:'rail_transfer',
+        description:'MRT-3 → transfer Cubao → LRT-2',
+        segments:[
+          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          {mode:'MRT-3',from:DB.mrt3.stations[oi],to:'Araneta-Cubao',stops:Math.abs(c3-oi),line:'MRT-3'},
+          {mode:'walk',from:'Araneta-Cubao MRT',to:'Araneta-Cubao LRT-2',min:3,note:'Direct interchange'},
+          {mode:'LRT-2',from:'Araneta-Cubao',to:DB.lrt2.stations[di],stops:Math.abs(di-c2),line:'LRT-2'},
+          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+        ],
+        transfers:1 });
+    }
+  }
 
-Types: mrt, lrt, jeep, bus, walk. Use EXACT tool values. Warm tone, some Taglish ok.`;
+  // LRT-2 → MRT-3
+  if (originArea.hubLine==='LRT-2' && destArea.hubLine==='MRT-3') {
+    const oi=stationIdx(DB.lrt2,originArea.hub), c2=stationIdx(DB.lrt2,'Araneta-Cubao');
+    const c3=stationIdx(DB.mrt3,'Araneta-Cubao'), di=stationIdx(DB.mrt3,destArea.hub);
+    if (oi!==-1&&c2!==-1&&c3!==-1&&di!==-1) {
+      paths.push({ id:'LRT2_MRT3', type:'rail_transfer',
+        description:'LRT-2 → transfer Cubao → MRT-3',
+        segments:[
+          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          {mode:'LRT-2',from:DB.lrt2.stations[oi],to:'Araneta-Cubao',stops:Math.abs(c2-oi),line:'LRT-2'},
+          {mode:'walk',from:'Araneta-Cubao LRT-2',to:'Araneta-Cubao MRT-3',min:3,note:'Direct interchange'},
+          {mode:'MRT-3',from:'Araneta-Cubao',to:DB.mrt3.stations[di],stops:Math.abs(di-c3),line:'MRT-3'},
+          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+        ],
+        transfers:1 });
+    }
+  }
 
-// ── OPTIMIZATION 1: GEMINI CALL WITH TIMEOUT ──────
-function geminiRequest(body) {
+  return paths;
+}
+
+// ── STAGE 3: read_path ────────────────────────────
+function readPath(p, isPeak) {
+  const pm = isPeak ? 1.5 : 1;
+  const segs = p.segments.map(s => {
+    let fare=0, min=s.min||0, label='', detail='';
+    if (s.mode==='MRT-3') {
+      const n=s.stops||1;
+      fare=DB.mrt3.fare[Math.min(n,12)]||28;
+      min=Math.ceil(n*DB.mrt3.minPerStop+5);
+      label=`MRT-3: ${s.from} → ${s.to}`;
+      detail=`${n} stop${n>1?'s':''}${isPeak?' · expect queues':''}`;
+    } else if (s.mode==='LRT-1') {
+      const n=s.stops||1;
+      fare=DB.lrt1.fare[Math.min(n,17)]||30;
+      min=Math.ceil(n*DB.lrt1.minPerStop+5);
+      label=`LRT-1: ${s.from} → ${s.to}`;
+      detail=`${n} stop${n>1?'s':''}`;
+    } else if (s.mode==='LRT-2') {
+      const n=s.stops||1;
+      fare=DB.lrt2.fare[Math.min(n,10)]||22;
+      min=Math.ceil(n*DB.lrt2.minPerStop+4);
+      label=`LRT-2: ${s.from} → ${s.to}`;
+      detail=`${n} stop${n>1?'s':''}`;
+    } else if (s.mode==='jeepney') {
+      const km=s.km||4;
+      fare=km<=4?13:Math.ceil(13+(km-4)*1.80);
+      min=Math.ceil((s.min||20)*pm);
+      label=`Jeepney to ${s.to}`;
+      detail=`${km}km${isPeak?' · heavy traffic':''}`;
+    } else if (s.mode==='walk') {
+      fare=0; min=s.min||5;
+      label=`Walk to ${s.to}`;
+      detail=s.note||'';
+    } else if (s.mode==='p2p') {
+      fare=s.fare||0;
+      min=Math.ceil((s.min||40)*(isPeak?1.3:1));
+      label=`P2P Bus: ${s.from} → ${s.to}`;
+      detail=`Air-conditioned · fixed fare${isPeak?' · traffic':''}`;
+    }
+    return {...s, fare, min, label, detail};
+  });
+  return {...p, segments:segs,
+    totalFare: segs.reduce((a,s)=>a+s.fare,0),
+    totalMin:  segs.reduce((a,s)=>a+s.min,0),
+    isPeak};
+}
+
+// ── STAGE 4: get_context ──────────────────────────
+function getContext(readPaths, budget, mode) {
+  const pool = readPaths.filter(p=>!budget||p.totalFare<=budget);
+  const ranked = [...(pool.length?pool:readPaths)].sort((a,b)=>
+    mode==='fastest' ? a.totalMin-b.totalMin :
+    mode==='least_transfers' ? a.transfers-b.transfers :
+    a.totalFare-b.totalFare
+  );
+  return {
+    allPaths: readPaths,
+    recommended: ranked[0]||null,
+    alternatives: ranked.slice(1,3),
+    budgetWarning: budget && ranked[0] && ranked[0].totalFare>budget
+      ? `All routes exceed ₱${budget}. Cheapest is ₱${Math.min(...readPaths.map(p=>p.totalFare))}.`
+      : null
+  };
+}
+
+// ── PARSE USER INPUT ──────────────────────────────
+function parseUserInput(message) {
+  const text = message.toLowerCase();
+  const budgetMatch = text.match(/[₱p](\d+)|(\d+)\s*peso/i);
+  const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
+  const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(text);
+  let origin=null, destination=null;
+  const m = message.match(/(?:from\s+)?(.+?)\s+to\s+(.+?)(?:\s*[,.]|$|\s+budget|\s+[₱p]\d|\s+need|\s+by\s+\d)/i);
+  if (m) {
+    origin      = m[1].replace(/^(from|sa)\s+/i,'').trim();
+    destination = m[2].trim();
+  }
+  return { origin, destination, budget, isPeak };
+}
+
+// ── BUILD ROUTE JSON (server-side, no Gemini needed) ──
+function buildRouteJson(context, origin, destination) {
+  const rec = context.recommended;
+  if (!rec) return null;
+  return {
+    title: `${origin} → ${destination}`,
+    totalFare: rec.totalFare,
+    totalTime: rec.totalMin,
+    transfers: rec.transfers,
+    steps: rec.segments.map(s => ({
+      type: s.mode==='MRT-3'?'mrt':s.mode==='LRT-1'||s.mode==='LRT-2'?'lrt':s.mode==='p2p'?'bus':s.mode,
+      label: s.label,
+      detail: s.detail,
+      fare: s.fare,
+      time: s.min
+    }))
+  };
+}
+
+// ── GEMINI CALL ───────────────────────────────────
+function callGemini(systemPrompt, userMessage, history) {
   return new Promise((resolve, reject) => {
     const apiKey = process.env.GEMINI_API_KEY;
-    const postData = JSON.stringify(body);
+    if (!apiKey) { reject(new Error('GEMINI_API_KEY not set in .env')); return; }
+
+    const contents = [
+      ...history.slice(-6),
+      { role:'user', parts:[{ text:userMessage }] }
+    ];
+    const body = JSON.stringify({
+      system_instruction: { parts:[{ text:systemPrompt }] },
+      contents,
+      generationConfig: { temperature:0.3, maxOutputTokens:300 }
+    });
     const options = {
-      hostname: 'generativelanguage.googleapis.com',
-      path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+      hostname:'generativelanguage.googleapis.com',
+      path:`/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+      method:'POST',
+      headers:{ 'Content-Type':'application/json','Content-Length':Buffer.byteLength(body) }
     };
     const req = https.request(options, res => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
+      let data='';
+      res.on('data', c => data+=c);
       res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch(e) { reject(new Error('Invalid JSON from Gemini')); }
+        try {
+          if (!data) { reject(new Error('Empty response from Gemini')); return; }
+          const parsed = JSON.parse(data);
+          if (res.statusCode===429) { reject(new Error('Rate limit reached. Wait a moment.')); return; }
+          if (res.statusCode===400) { reject(new Error('API key invalid — check .env file.')); return; }
+          if (res.statusCode!==200) { reject(new Error(`Gemini error ${res.statusCode}: ${parsed.error?.message||''}`)); return; }
+          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text||'';
+          if (!text) { reject(new Error('No text in Gemini response')); return; }
+          resolve(text);
+        } catch(e) { reject(new Error('Failed to parse Gemini response: '+e.message)); }
       });
     });
-    
-    // OPTIMIZATION 1: Set timeout (10 seconds)
-    req.setTimeout(API_TIMEOUT, () => {
-      req.destroy();
-      reject(new Error(`Gemini API timeout after ${API_TIMEOUT}ms — try again`));
-    });
-    
-    req.on('error', reject);
-    req.write(postData);
-    req.end();
+    req.setTimeout(25000, () => { req.destroy(); reject(new Error('Request timed out after 25s')); });
+    req.on('error', e => reject(new Error('Network error: '+e.message)));
+    req.write(body); req.end();
   });
 }
 
-// ── AGENT LOOP (server-side) ──────────────────────
-async function runAgentLoop(messages, mode) {
-  // OPTIMIZATION 3: Trim conversation history before sending to Gemini
-  const trimmedMessages = trimConversationHistory(messages);
-  
-  const prompt = SYSTEM_PROMPT.replace('{MODE}', mode || 'cheapest');
-  const body = {
-    system_instruction: { parts: [{ text: prompt }] },
-    contents: trimmedMessages,
-    tools: [{ function_declarations: TOOL_DEFINITIONS }],
-    generationConfig: { temperature: 0.5, maxOutputTokens: 2000 }
-  };
+// ── SYSTEM PROMPT ─────────────────────────────────
+// Gemini's ONLY job: write a 1-2 sentence intro.
+// The route card JSON is built server-side — not by Gemini.
+const NARRATION_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
+The route has already been computed. Write ONLY a warm 1-2 sentence introduction for it.
+Do NOT output JSON, numbers, or any route data. Just a friendly sentence or two in English with light Taglish.
+Example: "Sige, found a good route for you! This combo gets you there in about an hour without breaking the bank."`;
 
-  const toolLog = [];
-  const MAX = 8;
-
-  for (let i = 0; i < MAX; i++) {
-    const { status, body: data } = await geminiRequest(body);
-
-    if (status === 400) throw new Error('API key invalid — check your .env file');
-    if (status === 429) throw new Error('Rate limit reached. Wait a moment and try again.');
-    if (status !== 200) throw new Error(`Gemini error ${status}: ${data?.error?.message || 'Unknown'}`);
-
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    const textParts = parts.filter(p => p.text);
-    const funcCalls = parts.filter(p => p.functionCall);
-
-    if (funcCalls.length === 0) {
-      return { text: textParts.map(p => p.text).join(''), toolLog };
-    }
-
-    body.contents.push({ role: 'model', parts });
-
-    const toolResults = [];
-    for (const part of funcCalls) {
-      const { name, args } = part.functionCall;
-      toolLog.push({ type: 'call', text: `→ ${name}(${JSON.stringify(args)})` });
-      let result;
-      
-      // OPTIMIZATION 2: Check cache for lookup_route (most expensive operation)
-      if (name === 'lookup_route') {
-        const cacheKey = getCacheKey(args.origin, args.destination, mode);
-        if (ROUTE_CACHE.has(cacheKey)) {
-          result = ROUTE_CACHE.get(cacheKey);
-          toolLog.push({ type: 'result', text: `← [CACHED] ${JSON.stringify(result).slice(0, 100)}` });
-        } else {
-          try {
-            result = AgentTools[name]?.(...Object.values(args)) ?? { error: 'Unknown tool' };
-            ROUTE_CACHE.set(cacheKey, result);
-            toolLog.push({ type: 'result', text: `← ${JSON.stringify(result).slice(0, 120)}` });
-          } catch(e) {
-            result = { error: e.message };
-            toolLog.push({ type: 'err', text: `← error: ${e.message}` });
-          }
-        }
-      } else {
-        try {
-          result = AgentTools[name]?.(...Object.values(args)) ?? { error: 'Unknown tool' };
-          toolLog.push({ type: 'result', text: `← ${JSON.stringify(result).slice(0, 120)}` });
-        } catch(e) {
-          result = { error: e.message };
-          toolLog.push({ type: 'err', text: `← error: ${e.message}` });
-        }
-      }
-      
-      toolResults.push({ functionResponse: { name, response: result } });
-    }
-    body.contents.push({ role: 'user', parts: toolResults });
-  }
-
-  throw new Error('Agent exceeded max iterations.');
-}
-
-// ── PARSE REQUEST BODY ────────────────────────────
+// ── HELPERS ───────────────────────────────────────
 function readBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try { resolve(JSON.parse(body)); }
-      catch(e) { reject(new Error('Invalid JSON')); }
-    });
+    let body='';
+    req.on('data', c => body+=c);
+    req.on('end', () => { try { resolve(JSON.parse(body||'{}')); } catch(e) { reject(new Error('Invalid JSON')); } });
     req.on('error', reject);
   });
 }
 
-// ── HTTP SERVER ───────────────────────────────────
+function sendJson(res, status, data) {
+  if (res.headersSent) return;
+  res.writeHead(status, { 'Content-Type':'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+// ── SERVER ────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
-  const setCORS = () => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  };
+  res.setHeader('Access-Control-Allow-Origin','*');
+  res.setHeader('Access-Control-Allow-Headers','Content-Type');
+  if (req.method==='OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // ── POST /api/chat — main agent endpoint ──
-  if (req.method === 'POST' && req.url === '/api/chat') {
-    setCORS();
+  if (req.method==='POST' && req.url.startsWith('/api/chat')) {
     try {
-      const { messages, mode } = await readBody(req);
-      if (!messages || !Array.isArray(messages)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'messages array required' }));
+      const { message, history=[], mode='cheapest' } = await readBody(req);
+      const pipelineLog = [];
+      const log = (stage, data) => pipelineLog.push({ stage, data });
+
+      // STAGE 1
+      const parsed = parseUserInput(message);
+      log('parse', parsed);
+
+      // No route detected — pure conversation
+      if (!parsed.origin || !parsed.destination) {
+        const reply = await callGemini(
+          `You are SakayAI, a friendly Metro Manila commute assistant. Answer conversationally. If the user seems to want a route, ask them for their origin and destination.`,
+          message, history
+        ).catch(e => `Hi! Sabihin mo lang kung saan ka pupunta at saan ka galing — I'll plan your route!`);
+        sendJson(res, 200, { type:'chat', text:reply, pipelineLog });
         return;
       }
-      const result = await runAgentLoop(messages, mode);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(result));
+
+      // STAGE 1 continued
+      const resolved = resolveLocations(parsed.origin, parsed.destination);
+      log('resolve', { origin:resolved.origin, destination:resolved.destination });
+
+      // STAGE 2
+      const paths = listPaths(resolved);
+      log('paths', paths.map(p=>p.description));
+
+      if (paths.length===0) {
+        const reply = await callGemini(
+          `You are SakayAI. Tell the user you couldn't find a route between the two places in your database. Be apologetic and suggest they try specifying nearby hubs like Baclaran, Cubao, Makati, or SM North.`,
+          `No route found: ${resolved.origin} → ${resolved.destination}`, history
+        ).catch(() => `Sorry, wala pa akong route data between ${resolved.origin} and ${resolved.destination}. Try specifying a nearby hub like Baclaran, Cubao, or Makati!`);
+        sendJson(res, 200, { type:'chat', text:reply, pipelineLog });
+        return;
+      }
+
+      // STAGE 3
+      const readPaths = paths.map(p => readPath(p, parsed.isPeak));
+      log('fares', readPaths.map(p=>({ id:p.id, fare:p.totalFare, min:p.totalMin })));
+
+      // STAGE 4
+      const context = getContext(readPaths, parsed.budget, mode);
+      log('ranked', { recommended:context.recommended?.id, budgetWarning:context.budgetWarning });
+
+      // Build route JSON server-side — no Gemini involved
+      const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
+      log('route_json', routeJson);
+
+      // Gemini writes ONLY the intro sentence
+      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Total fare: ₱${context.recommended.totalFare}. Total time: ${context.recommended.totalMin} minutes. Transfers: ${context.recommended.transfers}. Budget: ${parsed.budget ? '₱'+parsed.budget : 'not specified'}. ${context.budgetWarning||''}`;
+
+      const intro = await callGemini(NARRATION_PROMPT, introContext, history)
+        .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+
+      // Combine: intro text + server-built JSON
+      const responseText = `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`;
+
+      sendJson(res, 200, { type:'route', text:responseText, pipelineLog });
+
     } catch(e) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: e.message }));
+      sendJson(res, 500, { error: e.message||'Server error' });
     }
     return;
   }
 
-  // ── OPTIMIZATION 4: POST /api/chat-stream — streaming endpoint ──
-  if (req.method === 'POST' && req.url === '/api/chat-stream') {
-    setCORS();
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive'
-    });
-    
-    try {
-      const { messages, mode } = await readBody(req);
-      if (!messages || !Array.isArray(messages)) {
-        res.write(`data: ${JSON.stringify({ error: 'messages array required' })}\n\n`);
-        res.end();
-        return;
-      }
-      
-      const result = await runAgentLoop(messages, mode);
-      res.write(`data: ${JSON.stringify({ type: 'response', text: result.text, toolLog: result.toolLog })}\n\n`);
-      res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-      res.end();
-    } catch(e) {
-      res.write(`data: ${JSON.stringify({ error: e.message })}\n\n`);
-      res.end();
-    }
-    return;
-  }
-
-  // OPTIONS preflight
-  if (req.method === 'OPTIONS') {
-    setCORS();
-    res.writeHead(204);
-    res.end();
-    return;
-  }
-
-  // ── Serve static files ──
-  let filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
+  // Static files
+  let filePath = path.join(__dirname, req.url==='/'?'index.html':req.url);
   if (!filePath.startsWith(__dirname)) { res.writeHead(403); res.end('Forbidden'); return; }
-
   const ext = path.extname(filePath);
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); res.end('Not found'); return; }
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/plain' });
+    res.writeHead(200, { 'Content-Type':MIME[ext]||'text/plain' });
     res.end(data);
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT||3000;
 server.listen(PORT, () => {
-  console.log(`\n  ✓ SakayAI running → http://localhost:${PORT}\n`);
-  console.log(`  OPTIMIZATIONS ENABLED:`);
-  console.log(`    1. Request timeout: ${API_TIMEOUT}ms`)
-  console.log(`    2. Route caching: ${CACHE_TTL/1000/60} min TTL`)
-  console.log(`    3. History trimming: last 6 messages only`);
-  console.log(`    4. Streaming: /api/chat-stream endpoint\n`);
-  if (!process.env.GEMINI_API_KEY) {
-    console.warn('  ⚠  GEMINI_API_KEY not set in .env!\n');
-  }
+  console.log(`\n  SakayAI running → http://localhost:${PORT}\n`);
+  if (!process.env.GEMINI_API_KEY) console.warn('  ⚠  GEMINI_API_KEY not set in .env!\n');
 });
