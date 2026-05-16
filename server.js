@@ -312,15 +312,11 @@ function buildRouteJson(context, origin, destination) {
   if (!rec) return null;
   return {
     title: `${origin} → ${destination}`,
-    totalFare: rec.totalFare,
-    totalTime: rec.totalMin,
     transfers: rec.transfers,
     steps: rec.segments.map(s => ({
       type: s.mode==='MRT-3'?'mrt':s.mode==='LRT-1'||s.mode==='LRT-2'?'lrt':s.mode==='p2p'?'bus':s.mode,
       label: s.label,
-      detail: s.detail,
-      fare: s.fare,
-      time: s.min
+      detail: s.detail
     }))
   };
 }
@@ -448,7 +444,7 @@ const server = http.createServer(async (req, res) => {
       log('route_json', routeJson);
 
       // Gemini writes ONLY the intro sentence
-      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Total fare: ₱${context.recommended.totalFare}. Total time: ${context.recommended.totalMin} minutes. Transfers: ${context.recommended.transfers}. Budget: ${parsed.budget ? '₱'+parsed.budget : 'not specified'}. ${context.budgetWarning||''}`;
+      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning||''}`;
 
       const intro = await callGemini(NARRATION_PROMPT, introContext, history)
         .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
