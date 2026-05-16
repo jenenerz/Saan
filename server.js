@@ -11,47 +11,97 @@ const MIME = {
 
 const DB = {
   aliases: {
+    // Paranaque / South
     "paranaque":"Paranaque","parañaque":"Paranaque","para":"Paranaque",
+    "sucat":"Paranaque","bf homes":"Paranaque",
     "las pinas":"Las Pinas","las piñas":"Las Pinas","laspinas":"Las Pinas",
-    "cubao":"Cubao","araneta":"Cubao","araneta cubao":"Cubao",
-    "makati":"Makati","ayala":"Makati",
+    "alabang":"Alabang","starmall":"Alabang","muntinlupa":"Alabang","vtx":"Alabang",
+    "bicutan":"Bicutan","ftf":"Bicutan","fti":"Bicutan",
+
+    // South Bay / Pasay / MOA
+    "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
+    "pasay":"Pasay","baclaran":"Baclaran","pitx":"PITX",
+    "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
+    "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
+
+    // Makati / BGC
+    "makati":"Makati","ayala":"Makati","glorietta":"Makati","greenbelt":"Makati",
+    "one ayala":"Makati","buendia":"Buendia","gil puyat":"Buendia",
     "bgc":"BGC","bonifacio":"BGC","bonifacio global city":"BGC","taguig":"BGC","fort":"BGC",
-    "quiapo":"Quiapo","manila":"Manila","divisoria":"Manila",
-    "alabang":"Alabang","muntinlupa":"Alabang",
-    "monumento":"Monumento","caloocan":"Monumento",
-    "sm north":"SM North","sm north edsa":"SM North","north edsa":"SM North",
-    "ortigas":"Ortigas","pasig":"Ortigas",
+    "market market":"BGC","uptown bgc":"BGC","uptown mall":"BGC",
+    "guadalupe":"Guadalupe",
+
+    // Ortigas / East
+    "ortigas":"Ortigas","pasig":"Ortigas","sm megamall":"Ortigas","megamall":"Ortigas",
+    "robinsons galleria":"Ortigas","starmall shaw":"Ortigas",
+    "mandaluyong":"Mandaluyong","shaw":"Mandaluyong","boni":"Mandaluyong",
+    "san juan":"San Juan","greenhills":"San Juan",
+
+    // Manila
+    "quiapo":"Quiapo","manila":"Manila","divisoria":"Manila","intramuros":"Manila",
+    "lawton":"Manila","avenida":"Manila","recto":"Quiapo","sampaloc":"Manila",
+    "espana":"Manila","españa":"Manila","luneta":"Manila","rizal park":"Manila",
+    "binondo":"Manila","chinatown":"Manila",
+
+    // North
+    "monumento":"Monumento","caloocan":"Monumento","balintawak":"Monumento",
+    "sm north":"SM North","sm north edsa":"SM North","north edsa":"SM North","trinoma":"SM North",
+    "fairview":"Novaliches","novaliches":"Novaliches","commonwealth":"Novaliches",
+    "qc":"Quezon City","quezon city":"Quezon City","quezon ave":"Quezon City",
+    "cubao":"Cubao","araneta":"Cubao","araneta cubao":"Cubao","farmers":"Cubao","gateway":"Cubao",
+
+    // East
     "marikina":"Marikina","santolan":"Marikina",
-    "antipolo":"Antipolo","cainta":"Antipolo",
-    "novaliches":"Novaliches","fairview":"Novaliches","commonwealth":"Novaliches",
-    "baclaran":"Baclaran","pasay":"Baclaran",
-    "recto":"Quiapo",
-    "qc":"Quezon City","quezon city":"Quezon City",
-    "katipunan":"Katipunan","ateneo":"Katipunan","up":"Katipunan",
-    "mandaluyong":"Mandaluyong","shaw":"Mandaluyong",
-    "san juan":"San Juan","greenhills":"San Juan"
+    "antipolo":"Antipolo","cainta":"Antipolo","cogeo":"Antipolo",
+    "katipunan":"Katipunan","ateneo":"Katipunan","up":"Katipunan","loyola":"Katipunan",
   },
+
   areas: {
+    // === SOUTH ===
     "Paranaque":   { hub:"Baclaran",        hubLine:"LRT-1", hubMin:25, hubKm:6,  hubMode:"jeepney" },
     "Las Pinas":   { hub:"Baclaran",        hubLine:"LRT-1", hubMin:30, hubKm:7,  hubMode:"jeepney" },
     "Alabang":     { hub:"Alabang",         hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Bicutan":     { hub:"Taft Avenue",     hubLine:"MRT-3", hubMin:20, hubKm:5,  hubMode:"jeepney" },
+
+    // === PASAY / BACLARAN / MOA / PITX / NAIA ===
+    // These are P2P-first hubs; LRT-1 Baclaran is reachable by jeepney but
+    // we keep hubLine:"LRT-1" only for Baclaran itself (direct origin).
+    // MOA/PITX/NAIA use hubLine:"P2P" so rail-transfer logic ignores them
+    // and only the explicit p2p[] entries apply.
+    "Baclaran":    { hub:"Baclaran",        hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Pasay":       { hub:"Baclaran",        hubLine:"LRT-1", hubMin:10, hubKm:2,  hubMode:"jeepney" },
+    "MOA":         { hub:"MOA",             hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "PITX":        { hub:"PITX",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "NAIA":        { hub:"NAIA",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+
+    // === MAKATI / BGC ===
     "Makati":      { hub:"Ayala",           hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
+    "Buendia":     { hub:"Buendia",         hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Guadalupe":   { hub:"Guadalupe",       hubLine:"MRT-3", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "BGC":         { hub:"Ayala",           hubLine:"MRT-3", hubMin:15, hubKm:3,  hubMode:"jeepney" },
+
+    // === ORTIGAS / EAST ===
     "Ortigas":     { hub:"Ortigas",         hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "Mandaluyong": { hub:"Shaw Boulevard",  hubLine:"MRT-3", hubMin:8,  hubKm:2,  hubMode:"jeepney" },
     "San Juan":    { hub:"Shaw Boulevard",  hubLine:"MRT-3", hubMin:12, hubKm:3,  hubMode:"jeepney" },
+
+    // === MANILA ===
     "Quiapo":      { hub:"Doroteo Jose",    hubLine:"LRT-1", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "Manila":      { hub:"Central Terminal",hubLine:"LRT-1", hubMin:12, hubKm:3,  hubMode:"jeepney" },
+
+    // === NORTH ===
     "Monumento":   { hub:"Monumento",       hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "SM North":    { hub:"North Avenue",    hubLine:"MRT-3", hubMin:5,  hubKm:1,  hubMode:"walk"    },
     "Quezon City": { hub:"Quezon Avenue",   hubLine:"MRT-3", hubMin:8,  hubKm:2,  hubMode:"jeepney" },
     "Novaliches":  { hub:"North Avenue",    hubLine:"MRT-3", hubMin:45, hubKm:10, hubMode:"jeepney" },
     "Cubao":       { hub:"Araneta-Cubao",   hubLine:"MRT-3", hubMin:0,  hubKm:0,  hubMode:"origin"  },
+
+    // === EAST ===
     "Marikina":    { hub:"Santolan",        hubLine:"LRT-2", hubMin:15, hubKm:4,  hubMode:"jeepney" },
     "Antipolo":    { hub:"Santolan",        hubLine:"LRT-2", hubMin:30, hubKm:8,  hubMode:"jeepney" },
     "Katipunan":   { hub:"Katipunan",       hubLine:"LRT-2", hubMin:0,  hubKm:0,  hubMode:"origin"  },
-    "Baclaran":    { hub:"Baclaran",        hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  }
   },
+
   mrt3: {
     name:"MRT-3",
     stations:["Taft Avenue","Magallanes","Ayala","Buendia","Guadalupe","Boni","Shaw Boulevard","Ortigas","Santolan","Araneta-Cubao","GMA-Kamuning","Quezon Avenue","North Avenue"],
@@ -70,13 +120,56 @@ const DB = {
     fare:{1:12,2:12,3:13,4:14,5:15,6:16,7:17,8:18,9:20,10:22},
     minPerStop:3
   },
+
+  // ── POINT-TO-POINT BUSES ─────────────────────────────────────────────────
+  // Sources: commutetour.com + LTFRB data (fares as of 2025-2026)
   p2p: [
-    { from:"Alabang",   to:"BGC",    fare:80, min:45 },
-    { from:"Alabang",   to:"Makati", fare:70, min:40 },
-    { from:"Paranaque", to:"BGC",    fare:65, min:35 },
-    { from:"Las Pinas", to:"Makati", fare:65, min:45 },
-    { from:"Cubao",     to:"BGC",    fare:85, min:40 },
-    { from:"Novaliches",to:"Makati", fare:90, min:60 }
+    // === FROM ALABANG (Starmall) ===
+    { from:"Alabang", to:"BGC",    bus:"HM Worthy",         fare:52,  min:45, note:"Via SLEX–C5, TRIPKO card. 6AM–8PM." },
+    { from:"Alabang", to:"Makati", bus:"Alabang–Ayala Bus",  fare:48,  min:35, note:"Via SLEX. 4AM–10PM. Also RRCG P2P from ATC/SouthPark to Glorietta." },
+    { from:"Alabang", to:"Cubao",  bus:"Alabang Metrolink / HM", fare:75, min:60, note:"Via EDSA. Also MRT: ride to Ayala, switch to MRT Cubao." },
+    { from:"Alabang", to:"MOA",    bus:"Alabang–Pasay Bus",  fare:40,  min:40, note:"Via EDSA." },
+    { from:"Alabang", to:"Ortigas",bus:"Starmall–Ortigas Bus",fare:65, min:55, note:"Via EDSA." },
+
+    // === FROM LAS PINAS ===
+    { from:"Las Pinas", to:"Makati", bus:"Las Piñas–Ayala Bus", fare:55, min:45, note:"Via Coastal Rd / SLEX." },
+
+    // === FROM PARANAQUE ===
+    { from:"Paranaque", to:"BGC",    bus:"HM Worthy / P2P",    fare:65, min:35, note:"Via C5." },
+    { from:"Paranaque", to:"Makati", bus:"Paranaque–Ayala Bus", fare:50, min:40, note:"Via SLEX." },
+    { from:"Paranaque", to:"MOA",    bus:"Paranaque–Pasay Bus", fare:30, min:25, note:"Via Coastal Rd." },
+
+    // === FROM CUBAO (Farmers / Araneta) ===
+    { from:"Cubao", to:"BGC",    bus:"HM Transport",            fare:85, min:40, note:"Via C5." },
+    { from:"Cubao", to:"Alabang",bus:"Alabang Metrolink",       fare:75, min:60, note:"Via EDSA–SLEX. Or MRT to Ayala, Ayala bus to Alabang." },
+    { from:"Cubao", to:"MOA",    bus:"EDSA Carousel / UV",      fare:30, min:45, note:"EDSA Carousel southbound to Taft, jeep to MOA." },
+    { from:"Cubao", to:"SM North",bus:"EDSA Carousel",          fare:15, min:20, note:"EDSA Carousel northbound." },
+
+    // === FROM NOVALICHES ===
+    { from:"Novaliches", to:"Makati", bus:"Novaliches–Ayala P2P", fare:90, min:60, note:"Via EDSA." },
+    { from:"Novaliches", to:"SM North",bus:"Jeep to North Ave",  fare:20, min:40, note:"Jeep to SM North / North Ave MRT." },
+
+    // === FROM/TO MOA ===
+    { from:"MOA", to:"Makati", bus:"EDSA Carousel / Green Frog", fare:30, min:30, note:"EDSA Carousel to Ayala or Green Frog Hybrid Bus (PITX–BGC via Buendia). Stops at MOA Globe." },
+    { from:"MOA", to:"BGC",    bus:"Green Frog Hybrid Bus",       fare:35, min:25, note:"Operates daily PITX–Uptown BGC via LRT Buendia. Stops at MOA Globe." },
+    { from:"MOA", to:"Cubao",  bus:"EDSA Carousel",               fare:30, min:50, note:"Northbound EDSA Carousel." },
+    { from:"MOA", to:"Manila", bus:"Jeep to Lawton / Luneta",     fare:13, min:30, note:"Modern jeep to Lawton or Luneta passing Intramuros." },
+
+    // === FROM PITX ===
+    { from:"PITX", to:"BGC",    bus:"Green Frog Hybrid Bus",      fare:40, min:35, note:"Direct PITX–Uptown BGC via LRT Buendia / Gil Puyat." },
+    { from:"PITX", to:"Makati", bus:"PITX–Ayala Bus",             fare:35, min:30, note:"Via EDSA." },
+    { from:"PITX", to:"MOA",    bus:"PITX–MOA Shuttle",           fare:20, min:15, note:"Short hop via Coastal Rd." },
+    { from:"PITX", to:"Cubao",  bus:"EDSA Carousel",              fare:30, min:55, note:"Northbound via EDSA." },
+    { from:"PITX", to:"SM North",bus:"EDSA Carousel",             fare:30, min:60, note:"Northbound terminus." },
+    { from:"PITX", to:"Alabang",bus:"PITX–Alabang Bus",           fare:30, min:30, note:"Via Coastal Rd." },
+
+    // === BUENDIA TERMINAL ===
+    { from:"Buendia", to:"Cubao",  bus:"EDSA Carousel / Bus",     fare:25, min:35, note:"EDSA Carousel northbound or ordinary bus via EDSA." },
+    { from:"Buendia", to:"SM North",bus:"EDSA Carousel / Bus",    fare:28, min:50, note:"EDSA northbound." },
+    { from:"Buendia", to:"Alabang",bus:"Buendia–Alabang Bus",     fare:52, min:45, note:"Via EDSA–SLEX." },
+    { from:"Buendia", to:"MOA",   bus:"Jeep / Modern Jeep",       fare:13, min:20, note:"Jeep to EDSA/Taft then to MOA, or jeep to Buendia MRT jeep to MOA." },
+    { from:"Buendia", to:"BGC",   bus:"BGC Bus / Jeep",           fare:25, min:20, note:"Jeep to Guadalupe then BGC Bus, or direct jeep signboard BGC." },
+    { from:"Buendia", to:"Monumento",bus:"EDSA Bus",              fare:35, min:60, note:"Ordinary bus via EDSA northbound to Monumento." },
   ]
 };
 
@@ -115,23 +208,43 @@ function listPaths(resolved) {
       hub.toLowerCase().includes(s.toLowerCase().split(' ')[0])
     );
 
-  // P2P direct
-  const p2pDirect = DB.p2p.find(r =>
-    (r.from === origin || r.from === originArea?.hub) &&
-    (r.to === destination || r.to === destArea?.hub)
+  // ── P2P bus routes (bidirectional, single best match) ──
+  // Try most-specific match first (area name), then fall back to hub name.
+  // Only ONE P2P path is added to prevent duplicate ROUTE_JSON output.
+  const findP2P = (a, b) => DB.p2p.find(r =>
+    (r.from === a && r.to === b) || (r.from === b && r.to === a)
   );
-  if (p2pDirect) {
-    paths.push({ id:'P2P', type:'direct_p2p',
-      description:`P2P Bus ${origin} → ${destination}`,
-      segments:[{ mode:'p2p', from:origin, to:destination, fare:p2pDirect.fare, min:p2pDirect.min }],
-      transfers:0 });
+  const p2pMatch =
+    findP2P(origin, destination) ||
+    findP2P(origin, destArea?.hub) ||
+    findP2P(originArea?.hub, destination) ||
+    findP2P(originArea?.hub, destArea?.hub);
+
+  if (p2pMatch) {
+    paths.push({
+      id:'P2P', type:'direct_p2p',
+      description:`${p2pMatch.bus}: ${origin} → ${destination}`,
+      segments:[{
+        mode:'p2p',
+        from: origin,
+        to:   destination,
+        fare: p2pMatch.fare,
+        min:  p2pMatch.min,
+        bus:  p2pMatch.bus,
+        note: p2pMatch.note
+      }],
+      transfers:0
+    });
   }
 
+  // Skip rail logic entirely if either end is a P2P-only hub (e.g. MOA, PITX, NAIA, Alabang)
+  // Those are served exclusively by the p2p[] bus entries above.
   if (!originArea || !destArea) return paths;
+  if (originArea.hubLine === 'P2P' || destArea.hubLine === 'P2P') return paths;
 
   const lines = [{ data:DB.mrt3 },{ data:DB.lrt1 },{ data:DB.lrt2 }];
 
-  // Same line direct
+  // ── Same rail line, direct ──
   for (const { data: line } of lines) {
     if (originArea.hubLine === line.name && destArea.hubLine === line.name) {
       const oi = stationIdx(line, originArea.hub);
@@ -151,11 +264,14 @@ function listPaths(resolved) {
     }
   }
 
-  // LRT-1 → MRT-3
+  // ── LRT-1 → MRT-3 (via Taft Ave / EDSA transfer) ──
+  // Guard: origin hub must not already be at EDSA (index 1 on LRT-1),
+  // otherwise the LRT-1 leg is 0 stops (EDSA→EDSA), which is invalid.
   if (originArea.hubLine==='LRT-1' && destArea.hubLine==='MRT-3') {
     const oi=stationIdx(DB.lrt1,originArea.hub), edsa=stationIdx(DB.lrt1,'EDSA');
     const taft=stationIdx(DB.mrt3,'Taft Avenue'), di=stationIdx(DB.mrt3,destArea.hub);
-    if (oi!==-1&&edsa!==-1&&taft!==-1&&di!==-1) {
+    // oi !== edsa ensures we actually ride at least one LRT-1 stop
+    if (oi!==-1&&edsa!==-1&&taft!==-1&&di!==-1&&oi!==edsa) {
       paths.push({ id:'LRT1_MRT3', type:'rail_transfer',
         description:'LRT-1 → transfer Taft Ave → MRT-3',
         segments:[
@@ -169,7 +285,7 @@ function listPaths(resolved) {
     }
   }
 
-  // MRT-3 → LRT-1
+  // ── MRT-3 → LRT-1 ──
   if (originArea.hubLine==='MRT-3' && destArea.hubLine==='LRT-1') {
     const oi=stationIdx(DB.mrt3,originArea.hub), taft=stationIdx(DB.mrt3,'Taft Avenue');
     const bac=stationIdx(DB.lrt1,'Baclaran'), di=stationIdx(DB.lrt1,destArea.hub);
@@ -187,7 +303,7 @@ function listPaths(resolved) {
     }
   }
 
-  // MRT-3 → LRT-2
+  // ── MRT-3 → LRT-2 (via Cubao interchange) ──
   if (originArea.hubLine==='MRT-3' && destArea.hubLine==='LRT-2') {
     const oi=stationIdx(DB.mrt3,originArea.hub), c3=stationIdx(DB.mrt3,'Araneta-Cubao');
     const c2=stationIdx(DB.lrt2,'Araneta-Cubao'), di=stationIdx(DB.lrt2,destArea.hub);
@@ -205,7 +321,7 @@ function listPaths(resolved) {
     }
   }
 
-  // LRT-2 → MRT-3
+  // ── LRT-2 → MRT-3 ──
   if (originArea.hubLine==='LRT-2' && destArea.hubLine==='MRT-3') {
     const oi=stationIdx(DB.lrt2,originArea.hub), c2=stationIdx(DB.lrt2,'Araneta-Cubao');
     const c3=stationIdx(DB.mrt3,'Araneta-Cubao'), di=stationIdx(DB.mrt3,destArea.hub);
@@ -262,8 +378,8 @@ function readPath(p, isPeak) {
     } else if (s.mode==='p2p') {
       fare=s.fare||0;
       min=Math.ceil((s.min||40)*(isPeak?1.3:1));
-      label=`P2P Bus: ${s.from} → ${s.to}`;
-      detail=`Air-conditioned · fixed fare${isPeak?' · traffic':''}`;
+      label=`${s.bus||'P2P Bus'}: ${s.from} → ${s.to}`;
+      detail=`${s.note||'Air-conditioned · fixed fare'}${isPeak?' · may have traffic':''}`;
     }
     return {...s, fare, min, label, detail};
   });
@@ -313,10 +429,20 @@ function buildRouteJson(context, origin, destination) {
   return {
     title: `${origin} → ${destination}`,
     transfers: rec.transfers,
+    totalFare: rec.totalFare,
+    totalMin: rec.totalMin,
     steps: rec.segments.map(s => ({
       type: s.mode==='MRT-3'?'mrt':s.mode==='LRT-1'||s.mode==='LRT-2'?'lrt':s.mode==='p2p'?'bus':s.mode,
       label: s.label,
-      detail: s.detail
+      detail: s.detail,
+      fare: s.fare,
+      min: s.min
+    })),
+    alternatives: context.alternatives.map(alt => ({
+      description: alt.description,
+      fare: alt.totalFare,
+      min: alt.totalMin,
+      transfers: alt.transfers
     }))
   };
 }
@@ -365,8 +491,6 @@ function callGemini(systemPrompt, userMessage, history) {
 }
 
 // ── SYSTEM PROMPT ─────────────────────────────────
-// Gemini's ONLY job: write a 1-2 sentence intro.
-// The route card JSON is built server-side — not by Gemini.
 const NARRATION_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
 The route has already been computed. Write ONLY a warm 1-2 sentence introduction for it.
 Do NOT output JSON, numbers, or any route data. Just a friendly sentence or two in English with light Taglish.
@@ -424,9 +548,9 @@ const server = http.createServer(async (req, res) => {
 
       if (paths.length===0) {
         const reply = await callGemini(
-          `You are SakayAI. Tell the user you couldn't find a route between the two places in your database. Be apologetic and suggest they try specifying nearby hubs like Baclaran, Cubao, Makati, or SM North.`,
+          `You are SakayAI. Tell the user you couldn't find a route between the two places in your database. Be apologetic and suggest they try specifying nearby hubs like Baclaran, Cubao, Makati, MOA, PITX, or SM North.`,
           `No route found: ${resolved.origin} → ${resolved.destination}`, history
-        ).catch(() => `Sorry, wala pa akong route data between ${resolved.origin} and ${resolved.destination}. Try specifying a nearby hub like Baclaran, Cubao, or Makati!`);
+        ).catch(() => `Sorry, wala pa akong route data between ${resolved.origin} and ${resolved.destination}. Try specifying a nearby hub like Baclaran, Cubao, Makati, or MOA!`);
         sendJson(res, 200, { type:'chat', text:reply, pipelineLog });
         return;
       }
@@ -439,17 +563,16 @@ const server = http.createServer(async (req, res) => {
       const context = getContext(readPaths, parsed.budget, mode);
       log('ranked', { recommended:context.recommended?.id, budgetWarning:context.budgetWarning });
 
-      // Build route JSON server-side — no Gemini involved
+      // Build route JSON server-side
       const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
       log('route_json', routeJson);
 
       // Gemini writes ONLY the intro sentence
-      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning||''}`;
+      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. Total fare: ₱${context.recommended.totalFare}. ${context.budgetWarning||''}`;
 
       const intro = await callGemini(NARRATION_PROMPT, introContext, history)
         .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
 
-      // Combine: intro text + server-built JSON
       const responseText = `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`;
 
       sendJson(res, 200, { type:'route', text:responseText, pipelineLog });
