@@ -413,12 +413,32 @@ function parseUserInput(message) {
   const budgetMatch = text.match(/[₱p](\d+)|(\d+)\s*peso/i);
   const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
   const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(text);
+
   let origin=null, destination=null;
+
+  // Must have a route-intent keyword before we attempt to parse origin/destination
+  const hasRouteIntent = /\b(to|papunta|goin|going|from|paano|how.*go|how.*get|how.*reach|directions?|route|commute|sakay)\b/i.test(message);
+
+  if (!hasRouteIntent) {
+    return { origin: null, destination: null, budget, isPeak };
+  }
+
+  // Try "X to Y" pattern
   const m = message.match(/(?:from\s+)?(.+?)\s+to\s+(.+?)(?:\s*[,.]|$|\s+budget|\s+[₱p]\d|\s+need|\s+by\s+\d)/i);
   if (m) {
-    origin      = m[1].replace(/^(from|sa)\s+/i,'').trim();
-    destination = m[2].trim();
+    const rawOrigin = m[1].replace(/^(from|sa|paano|how.*go|how.*get)\s+/i,'').trim();
+    const rawDest   = m[2].trim();
+
+    // Reject if origin looks like a question phrase rather than a place
+    const questionPhrases = /^(how|what|where|when|why|can|is|are|do|does|i|we|you)/i;
+    if (questionPhrases.test(rawOrigin)) {
+      return { origin: null, destination: null, budget, isPeak };
+    }
+
+    origin      = rawOrigin;
+    destination = rawDest;
   }
+
   return { origin, destination, budget, isPeak };
 }
 
@@ -448,44 +468,47 @@ function buildRouteJson(context, origin, destination) {
 }
 
 // ── GEMINI CALL ───────────────────────────────────
-function callGemini(systemPrompt, userMessage, history) {
+function callGeminiRaw(systemPrompt, userMessage, history) {
   return new Promise((resolve, reject) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) { reject(new Error('GEMINI_API_KEY not set in .env')); return; }
 
+    const validHistory = history.filter(m => m.role && m.parts?.[0]?.text?.trim());
     const contents = [
-      ...history.slice(-6),
-      { role:'user', parts:[{ text:userMessage }] }
+      ...validHistory.slice(-6),
+      { role:'user', parts:[{ text: userMessage }] }
     ];
+
     const body = JSON.stringify({
-      system_instruction: { parts:[{ text:systemPrompt }] },
+      system_instruction: { parts:[{ text: systemPrompt }] },
       contents,
-      generationConfig: { temperature:0.3, maxOutputTokens:300 }
+      generationConfig: { temperature: 0.1, maxOutputTokens: 100 }
     });
+
     const options = {
       hostname:'generativelanguage.googleapis.com',
       path:`/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
       method:'POST',
       headers:{ 'Content-Type':'application/json','Content-Length':Buffer.byteLength(body) }
     };
+
     const req = https.request(options, res => {
       let data='';
       res.on('data', c => data+=c);
       res.on('end', () => {
         try {
-          if (!data) { reject(new Error('Empty response from Gemini')); return; }
           const parsed = JSON.parse(data);
-          if (res.statusCode===429) { reject(new Error('Rate limit reached. Wait a moment.')); return; }
-          if (res.statusCode===400) { reject(new Error('API key invalid — check .env file.')); return; }
-          if (res.statusCode!==200) { reject(new Error(`Gemini error ${res.statusCode}: ${parsed.error?.message||''}`)); return; }
-          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text||'';
-          if (!text) { reject(new Error('No text in Gemini response')); return; }
+          if (res.statusCode===429) { reject(new Error('Rate limit reached.')); return; }
+          if (res.statusCode===400) { reject(new Error('API key invalid.')); return; }
+          if (res.statusCode!==200) { reject(new Error(`Gemini ${res.statusCode}`)); return; }
+          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          console.log('RAW TRIAGE RESPONSE:', JSON.stringify(text));
           resolve(text);
-        } catch(e) { reject(new Error('Failed to parse Gemini response: '+e.message)); }
+        } catch(e) { reject(e); }
       });
     });
-    req.setTimeout(25000, () => { req.destroy(); reject(new Error('Request timed out after 25s')); });
-    req.on('error', e => reject(new Error('Network error: '+e.message)));
+    req.setTimeout(15000, () => { req.destroy(); reject(new Error('Triage timeout')); });
+    req.on('error', reject);
     req.write(body); req.end();
   });
 }
@@ -518,70 +541,158 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
   if (req.method==='OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  if (req.method==='POST' && req.url.startsWith('/api/chat')) {
-    try {
-      const { message, history=[], mode='cheapest' } = await readBody(req);
-      const pipelineLog = [];
-      const log = (stage, data) => pipelineLog.push({ stage, data });
+if (req.method==='POST' && req.url.startsWith('/api/chat')) {
+  try {
+    const { message, history=[], mode='cheapest' } = await readBody(req);
+    const pipelineLog = [];
+    const log = (stage, data) => pipelineLog.push({ stage, data });
 
-      // STAGE 1
-      const parsed = parseUserInput(message);
-      log('parse', parsed);
-
-      // No route detected — pure conversation
-      if (!parsed.origin || !parsed.destination) {
-        const reply = await callGemini(
-          `You are SakayAI, a friendly Metro Manila commute assistant. Answer conversationally. If the user seems to want a route, ask them for their origin and destination.`,
-          message, history
-        ).catch(e => `Hi! Sabihin mo lang kung saan ka pupunta at saan ka galing — I'll plan your route!`);
-        sendJson(res, 200, { type:'chat', text:reply, pipelineLog });
-        return;
-      }
-
-      // STAGE 1 continued
-      const resolved = resolveLocations(parsed.origin, parsed.destination);
-      log('resolve', { origin:resolved.origin, destination:resolved.destination });
-
-      // STAGE 2
-      const paths = listPaths(resolved);
-      log('paths', paths.map(p=>p.description));
-
-      if (paths.length===0) {
-        const reply = await callGemini(
-          `You are SakayAI. Tell the user you couldn't find a route between the two places in your database. Be apologetic and suggest they try specifying nearby hubs like Baclaran, Cubao, Makati, MOA, PITX, or SM North.`,
-          `No route found: ${resolved.origin} → ${resolved.destination}`, history
-        ).catch(() => `Sorry, wala pa akong route data between ${resolved.origin} and ${resolved.destination}. Try specifying a nearby hub like Baclaran, Cubao, Makati, or MOA!`);
-        sendJson(res, 200, { type:'chat', text:reply, pipelineLog });
-        return;
-      }
-
-      // STAGE 3
-      const readPaths = paths.map(p => readPath(p, parsed.isPeak));
-      log('fares', readPaths.map(p=>({ id:p.id, fare:p.totalFare, min:p.totalMin })));
-
-      // STAGE 4
-      const context = getContext(readPaths, parsed.budget, mode);
-      log('ranked', { recommended:context.recommended?.id, budgetWarning:context.budgetWarning });
-
-      // Build route JSON server-side
-      const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
-      log('route_json', routeJson);
-
-      // Gemini writes ONLY the intro sentence
-      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. Total fare: ₱${context.recommended.totalFare}. ${context.budgetWarning||''}`;
-
-      const intro = await callGemini(NARRATION_PROMPT, introContext, history)
-        .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
-
-      const responseText = `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`;
-
-      sendJson(res, 200, { type:'route', text:responseText, pipelineLog });
-
-    } catch(e) {
-      sendJson(res, 500, { error: e.message||'Server error' });
-    }
+    const quickParse = parseUserInput(message);
+if (quickParse.origin && quickParse.destination) {
+  log('fast_path', { origin: quickParse.origin, destination: quickParse.destination });
+  const resolved = resolveLocations(quickParse.origin, quickParse.destination);
+  const paths = listPaths(resolved);
+  if (paths.length > 0) {
+    const fullContext = [...history.map(m => m.text||''), message].join(' ');
+    const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
+    const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
+    const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
+    const readPaths = paths.map(p => readPath(p, isPeak));
+    const context = getContext(readPaths, budget, mode);
+    const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
+    const intro = await callGemini(NARRATION_PROMPT, `Route: ${resolved.origin} to ${resolved.destination}.`, [])
+      .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+    sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`, pipelineLog });
     return;
   }
+}
+    // ── STEP 0: Gemini triages the conversation ──
+    // Reads full history + current message, decides if ready to route
+const TRIAGE_PROMPT = `You are SaanPH, a Metro Manila commute assistant.
+Read the FULL conversation history carefully. Your job is to extract origin and destination.
+
+Known Manila landmarks (use these to normalize):
+- "One Ayala", "Ayala Center", "Glorietta", "Greenbelt" = Makati
+- "MOA", "Mall of Asia", "SM MOA" = MOA
+- "BGC", "Bonifacio", "Fort" = BGC
+- "DLSU", "Taft Ave", "Vito Cruz" = Taft area
+
+If the conversation history shows the user already answered a question about origin OR destination,
+combine that with the current message to extract both.
+
+Example: if history shows "Where in Makati?" and user replied "One Ayala 3pm" and destination was "MOA",
+then origin = "Makati" and destination = "MOA".
+
+If you have BOTH origin and destination, output ONLY this exact line (nothing else):
+ROUTE_READY: origin="X" destination="Y"
+
+If you still need ONE piece of info, ask ONE short question only. No bullet points. Max 1 sentence.`;
+
+      const rawHistory = history
+        .filter(m => m.role && (m.text || m.parts?.[0]?.text))
+        .map(m => ({
+          role: m.role === 'model' ? 'model' : 'user',
+          parts: [{ text: (m.text || m.parts?.[0]?.text || '').replace(/ROUTE_JSON:[\s\S]*/,'').trim() }]
+        }));
+
+      // Ensure strict alternation — Gemini requires user/model/user/model
+      const triageHistory = [];
+      let lastRole = null;
+      for (const msg of rawHistory) {
+        if (msg.role !== lastRole) {
+          triageHistory.push(msg);
+          lastRole = msg.role;
+        }
+      }
+      // Must start with user
+      if (triageHistory.length > 0 && triageHistory[0].role !== 'user') {
+        triageHistory.shift();
+      }
+
+    let triageReply = null;
+    let triageError = null;
+
+    try {
+      triageReply = await callGeminiRaw(TRIAGE_PROMPT, message, triageHistory);
+    } catch(e) {
+      triageError = e.message;
+    }
+
+    log('triage', { reply: triageReply, error: triageError });
+
+    // If Gemini failed entirely, fall back to direct parse
+    if (!triageReply) {
+      const parsed = parseUserInput(message);
+      if (parsed.origin && parsed.destination) {
+        triageReply = `ROUTE_READY: origin="${parsed.origin}" destination="${parsed.destination}"`;
+      } else {
+        sendJson(res, 200, { type:'chat', text: `Saan ka galing at saan ka pupunta? (Error: ${triageError||'no response'})`, pipelineLog });
+        return;
+      }
+    }
+
+    const routeReadyMatch = triageReply.match(/ROUTE_READY:\s*origin="([^"]+)"\s*destination="([^"]+)"/i);
+
+    if (!routeReadyMatch) {
+      sendJson(res, 200, { type:'chat', text: triageReply, pipelineLog });
+      return;
+    }
+
+    // Ready — extract origin + destination Gemini identified
+    const extractedOrigin = routeReadyMatch[1].trim();
+    const extractedDest   = routeReadyMatch[2].trim();
+    log('extracted', { origin: extractedOrigin, destination: extractedDest });
+
+    // Parse budget + peak hour from full conversation context
+    const fullContext = [...history.map(m => m.text||''), message].join(' ');
+    const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
+    const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
+    const isPeak  = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
+
+    // STAGE 1
+    const resolved = resolveLocations(extractedOrigin, extractedDest);
+    log('resolve', { origin: resolved.origin, destination: resolved.destination });
+
+    // STAGE 2
+    const paths = listPaths(resolved);
+    log('paths', paths.map(p => p.description));
+
+    if (paths.length === 0) {
+      const reply = await callGemini(
+        `You are SakayAI. No route found between "${resolved.origin}" and "${resolved.destination}". 
+         Tell the user briefly and suggest they rephrase using simpler area names. Be short and friendly.`,
+        `No route: ${resolved.origin} → ${resolved.destination}`, triageHistory
+      ).catch(() => `Hindi ko mahanap ang route between ${resolved.origin} and ${resolved.destination}. Try mo ulit with a nearby landmark!`);
+      sendJson(res, 200, { type:'chat', text: reply, pipelineLog });
+      return;
+    }
+
+    // STAGE 3
+    const readPaths = paths.map(p => readPath(p, isPeak));
+    log('fares', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
+
+    // STAGE 4
+    const context = getContext(readPaths, budget, mode);
+    log('ranked', { recommended: context.recommended?.id, budgetWarning: context.budgetWarning });
+
+    const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
+    log('route_json', routeJson);
+
+    const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning||''}`;
+    const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
+      .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+
+    sendJson(res, 200, {
+      type: 'route',
+      text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`,
+      pipelineLog
+    });
+
+  } catch(e) {
+    sendJson(res, 500, { error: e.message||'Server error' });
+  }
+  return;
+}
 
   // Static files
   let filePath = path.join(__dirname, req.url==='/'?'index.html':req.url);

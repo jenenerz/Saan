@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SakayAI — Metro Manila Transit</title>
+<title>SaanPH — Metro Manila Transit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
@@ -560,10 +560,10 @@ body {
 
   <!-- ── LEFT ── -->
   <div class="left">
-    <div class="wordmark">SAK<br>AY</div>
-    <div class="wordmark-ai">AI<span class="wordmark-dot">.</span></div>
+    <div class="wordmark">SAA<br>N</div>
+    <div class="wordmark-ai">PH<span class="wordmark-dot">.</span></div>
 
-    <div class="sub-tag">Transit AI — Metro Manila</div>
+    <div class="sub-tag">Transit PH — Metro Manila</div>
 
     <div class="left-desc">
       Cheapest, fastest route via<br>
@@ -603,7 +603,7 @@ body {
         </span>
       </div>
       <div class="log-body" id="agentLog">
-        <div class="le sys">// SakayAI agent initialized</div>
+        <div class="le sys">// SaanPH agent initialized</div>
         <div class="le sys">// Tools: lookup_route, calculate_fare,</div>
         <div class="le sys">//   estimate_travel_time, check_transfer_options</div>
         <div class="le sys">// Awaiting query...</div>
@@ -635,8 +635,8 @@ body {
         <rect x="175" y="100" width="75" height="18" rx="2" fill="#F5D800"/>
         <text x="212" y="113" font-family="'Space Mono', monospace" font-size="8" font-weight="700" fill="#1A1A1A" text-anchor="middle">CUBAO</text>
         <!-- Bottom labels -->
-        <text x="80" y="142" font-family="'Bebas Neue', sans-serif" font-size="11" fill="#F5D800" text-anchor="middle">SAKAY</text>
-        <text x="230" y="142" font-family="'Bebas Neue', sans-serif" font-size="11" fill="#F5D800" text-anchor="middle">AI</text>
+        <text x="80" y="142" font-family="'Bebas Neue', sans-serif" font-size="11" fill="#F5D800" text-anchor="middle">SAAN</text>
+        <text x="230" y="142" font-family="'Bebas Neue', sans-serif" font-size="11" fill="#F5D800" text-anchor="middle">PH</text>
         <!-- Wheels -->
         <circle cx="70" cy="133" r="16" fill="#222"/>
         <circle cx="70" cy="133" r="9" fill="#444"/>
@@ -727,7 +727,7 @@ let isLoading = false;
 let routeMode = 'cheapest';
 
 // ── SYSTEM PROMPT ─────────────────────────────────
-const SYSTEM_PROMPT = `You are SakayAI, an agentic Metro Manila commute planning assistant.
+const SYSTEM_PROMPT = `You are SaanPH, an agentic Metro Manila commute planning assistant.
 You have 4 real tools. Use them to plan routes — never guess fares or times.
 
 BEHAVIOR:
@@ -777,7 +777,11 @@ async function runAgentLoop() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message: conversationHistory[conversationHistory.length - 1]?.text || '',
-      history: conversationHistory.slice(0, -1).map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+      history: conversationHistory.slice(0, -1).map(m => ({
+        role: m.role,
+        parts: [{ text: (m.text || '').replace(/ROUTE_JSON:[\s\S]*/,'').trim() }],
+        text: (m.text || '').replace(/ROUTE_JSON:[\s\S]*/,'').trim()
+      })),
       mode: routeMode
     })
   });
@@ -998,7 +1002,7 @@ function goHome() {
 
   // Reset agent log
   document.getElementById('agentLog').innerHTML = `
-    <div class="le sys">// SakayAI agent initialized</div>
+    <div class="le sys">// SaanPH agent initialized</div>
     <div class="le sys">// Awaiting query...</div>`;
   setLogActive(false);
 }
