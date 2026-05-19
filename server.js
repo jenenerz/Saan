@@ -346,43 +346,46 @@ function listPaths(resolved) {
 function readPath(p, isPeak) {
   const pm = isPeak ? 1.5 : 1;
   const segs = p.segments.map(s => {
-    let fare=0, min=s.min||0, label='', detail='';
-    if (s.mode==='MRT-3') {
-      const n=s.stops||1;
-      fare=DB.mrt3.fare[Math.min(n,12)]||28;
-      min=Math.ceil(n*DB.mrt3.minPerStop+5);
-      label=`MRT-3: ${s.from} → ${s.to}`;
-      detail=`${n} stop${n>1?'s':''}${isPeak?' · expect queues':''}`;
-    } else if (s.mode==='LRT-1') {
-      const n=s.stops||1;
-      fare=DB.lrt1.fare[Math.min(n,17)]||30;
-      min=Math.ceil(n*DB.lrt1.minPerStop+5);
-      label=`LRT-1: ${s.from} → ${s.to}`;
-      detail=`${n} stop${n>1?'s':''}`;
-    } else if (s.mode==='LRT-2') {
-      const n=s.stops||1;
-      fare=DB.lrt2.fare[Math.min(n,10)]||22;
-      min=Math.ceil(n*DB.lrt2.minPerStop+4);
-      label=`LRT-2: ${s.from} → ${s.to}`;
-      detail=`${n} stop${n>1?'s':''}`;
-    } else if (s.mode==='jeepney') {
-      const km=s.km||4;
-      fare=km<=4?13:Math.ceil(13+(km-4)*1.80);
-      min=Math.ceil((s.min||20)*pm);
-      label=`Jeepney to ${s.to}`;
-      detail=`${km}km${isPeak?' · heavy traffic':''}`;
-    } else if (s.mode==='walk') {
-      fare=0; min=s.min||5;
-      label=`Walk to ${s.to}`;
-      detail=s.note||'';
-    } else if (s.mode==='p2p') {
-      fare=s.fare||0;
-      min=Math.ceil((s.min||40)*(isPeak?1.3:1));
-      label=`${s.bus||'P2P Bus'}: ${s.from} → ${s.to}`;
-      detail=`${s.note||'Air-conditioned · fixed fare'}${isPeak?' · may have traffic':''}`;
-    }
-    return {...s, fare, min, label, detail};
-  });
+      let fare=0, min=s.min||0, label='', detail='';
+      if (s.mode==='MRT-3') {
+        const n=s.stops||1;
+        fare=DB.mrt3.fare[Math.min(n,12)]||28;
+        min=Math.ceil(n*DB.mrt3.minPerStop+5);
+        const dir = s.from && s.to ? (DB.mrt3.stations.indexOf(s.to) > DB.mrt3.stations.indexOf(s.from) ? 'Northbound' : 'Southbound') : '';
+        label=`MRT-3 ${dir}: ${s.from} → ${s.to}`;
+        detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Expect queues at turnstiles':''}`;
+      } else if (s.mode==='LRT-1') {
+        const n=s.stops||1;
+        fare=DB.lrt1.fare[Math.min(n,17)]||30;
+        min=Math.ceil(n*DB.lrt1.minPerStop+5);
+        const dir = DB.lrt1.stations.indexOf(s.to) > DB.lrt1.stations.indexOf(s.from) ? 'Northbound' : 'Southbound';
+        label=`LRT-1 ${dir}: ${s.from} → ${s.to}`;
+        detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Very crowded during rush hour':''}`;
+      } else if (s.mode==='LRT-2') {
+        const n=s.stops||1;
+        fare=DB.lrt2.fare[Math.min(n,10)]||22;
+        min=Math.ceil(n*DB.lrt2.minPerStop+4);
+        const dir = DB.lrt2.stations.indexOf(s.to) > DB.lrt2.stations.indexOf(s.from) ? 'Eastbound' : 'Westbound';
+        label=`LRT-2 ${dir}: ${s.from} → ${s.to}`;
+        detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}`;
+      } else if (s.mode==='jeepney') {
+        const km=s.km||4;
+        fare=km<=4?13:Math.ceil(13+(km-4)*1.80);
+        min=Math.ceil((s.min||20)*pm);
+        label=`Jeepney: ${s.from} → ${s.to}`;
+        detail=`Ride jeepney from ${s.from} going to ${s.to} · ~${km}km · Flag down along the route${isPeak?' · Heavy traffic expected':''}`;
+      } else if (s.mode==='walk') {
+        fare=0; min=s.min||5;
+        label=`Walk: ${s.from} → ${s.to}`;
+        detail=s.note||`Walk from ${s.from} to ${s.to}`;
+      } else if (s.mode==='p2p') {
+        fare=s.fare||0;
+        min=Math.ceil((s.min||40)*(isPeak?1.3:1));
+        label=`${s.bus||'P2P Bus'}: ${s.from} → ${s.to}`;
+        detail=`${s.note||'Air-conditioned · Fixed fare · No stops'}${isPeak?' · May be delayed due to traffic':''}`;
+      }
+      return {...s, fare, min, label, detail};
+    });
   return {...p, segments:segs,
     totalFare: segs.reduce((a,s)=>a+s.fare,0),
     totalMin:  segs.reduce((a,s)=>a+s.min,0),
