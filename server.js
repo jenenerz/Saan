@@ -516,6 +516,11 @@ function callGeminiRaw(systemPrompt, userMessage, history) {
   });
 }
 
+// ── GEMINI CALL (WITH SYSTEM PROMPT) ──────────────
+function callGemini(systemPrompt, userMessage, history) {
+  return callGeminiRaw(systemPrompt, userMessage, history);
+}
+
 // ── SYSTEM PROMPT ─────────────────────────────────
 const NARRATION_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
 The route has already been computed. Write ONLY a warm 1-2 sentence introduction for it.
