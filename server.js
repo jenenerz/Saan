@@ -11,92 +11,62 @@ const MIME = {
 
 const DB = {
   aliases: {
-    // Paranaque / South
     "paranaque":"Paranaque","parañaque":"Paranaque","para":"Paranaque",
     "sucat":"Paranaque","bf homes":"Paranaque",
     "las pinas":"Las Pinas","las piñas":"Las Pinas","laspinas":"Las Pinas",
     "alabang":"Alabang","starmall":"Alabang","muntinlupa":"Alabang","vtx":"Alabang",
     "bicutan":"Bicutan","ftf":"Bicutan","fti":"Bicutan",
-
-    // South Bay / Pasay / MOA
     "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
     "pasay":"Pasay","baclaran":"Baclaran","pitx":"PITX",
     "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
     "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
-
-    // Makati / BGC
     "makati":"Makati","ayala":"Makati","glorietta":"Makati","greenbelt":"Makati",
     "one ayala":"Makati","buendia":"Buendia","gil puyat":"Buendia",
     "bgc":"BGC","bonifacio":"BGC","bonifacio global city":"BGC","taguig":"BGC","fort":"BGC",
     "market market":"BGC","uptown bgc":"BGC","uptown mall":"BGC",
     "guadalupe":"Guadalupe",
-
-    // Ortigas / East
     "ortigas":"Ortigas","pasig":"Ortigas","sm megamall":"Ortigas","megamall":"Ortigas",
     "robinsons galleria":"Ortigas","starmall shaw":"Ortigas",
     "mandaluyong":"Mandaluyong","shaw":"Mandaluyong","boni":"Mandaluyong",
     "san juan":"San Juan","greenhills":"San Juan",
-
-    // Manila
     "quiapo":"Quiapo","manila":"Manila","divisoria":"Manila","intramuros":"Manila",
     "lawton":"Manila","avenida":"Manila","recto":"Quiapo","sampaloc":"Manila",
     "espana":"Manila","españa":"Manila","luneta":"Manila","rizal park":"Manila",
     "binondo":"Manila","chinatown":"Manila",
-
-    // North
     "monumento":"Monumento","caloocan":"Monumento","balintawak":"Monumento",
     "sm north":"SM North","sm north edsa":"SM North","north edsa":"SM North","trinoma":"SM North",
     "fairview":"Novaliches","novaliches":"Novaliches","commonwealth":"Novaliches",
     "qc":"Quezon City","quezon city":"Quezon City","quezon ave":"Quezon City",
     "cubao":"Cubao","araneta":"Cubao","araneta cubao":"Cubao","farmers":"Cubao","gateway":"Cubao",
-
-    // East
     "marikina":"Marikina","santolan":"Marikina",
     "antipolo":"Antipolo","cainta":"Antipolo","cogeo":"Antipolo",
     "katipunan":"Katipunan","ateneo":"Katipunan","up":"Katipunan","loyola":"Katipunan",
   },
 
   areas: {
-    // === SOUTH ===
     "Paranaque":   { hub:"Baclaran",        hubLine:"LRT-1", hubMin:25, hubKm:6,  hubMode:"jeepney" },
     "Las Pinas":   { hub:"Baclaran",        hubLine:"LRT-1", hubMin:30, hubKm:7,  hubMode:"jeepney" },
     "Alabang":     { hub:"Alabang",         hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Bicutan":     { hub:"Taft Avenue",     hubLine:"MRT-3", hubMin:20, hubKm:5,  hubMode:"jeepney" },
-
-    // === PASAY / BACLARAN / MOA / PITX / NAIA ===
-    // These are P2P-first hubs; LRT-1 Baclaran is reachable by jeepney but
-    // we keep hubLine:"LRT-1" only for Baclaran itself (direct origin).
-    // MOA/PITX/NAIA use hubLine:"P2P" so rail-transfer logic ignores them
-    // and only the explicit p2p[] entries apply.
     "Baclaran":    { hub:"Baclaran",        hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Pasay":       { hub:"Baclaran",        hubLine:"LRT-1", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "MOA":         { hub:"MOA",             hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "PITX":        { hub:"PITX",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "NAIA":        { hub:"NAIA",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
-
-    // === MAKATI / BGC ===
     "Makati":      { hub:"Ayala",           hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "Buendia":     { hub:"Buendia",         hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Guadalupe":   { hub:"Guadalupe",       hubLine:"MRT-3", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "BGC":         { hub:"Ayala",           hubLine:"MRT-3", hubMin:15, hubKm:3,  hubMode:"jeepney" },
-
-    // === ORTIGAS / EAST ===
     "Ortigas":     { hub:"Ortigas",         hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "Mandaluyong": { hub:"Shaw Boulevard",  hubLine:"MRT-3", hubMin:8,  hubKm:2,  hubMode:"jeepney" },
     "San Juan":    { hub:"Shaw Boulevard",  hubLine:"MRT-3", hubMin:12, hubKm:3,  hubMode:"jeepney" },
-
-    // === MANILA ===
     "Quiapo":      { hub:"Doroteo Jose",    hubLine:"LRT-1", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "Manila":      { hub:"Central Terminal",hubLine:"LRT-1", hubMin:12, hubKm:3,  hubMode:"jeepney" },
-
-    // === NORTH ===
     "Monumento":   { hub:"Monumento",       hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "SM North":    { hub:"North Avenue",    hubLine:"MRT-3", hubMin:5,  hubKm:1,  hubMode:"walk"    },
     "Quezon City": { hub:"Quezon Avenue",   hubLine:"MRT-3", hubMin:8,  hubKm:2,  hubMode:"jeepney" },
     "Novaliches":  { hub:"North Avenue",    hubLine:"MRT-3", hubMin:45, hubKm:10, hubMode:"jeepney" },
     "Cubao":       { hub:"Araneta-Cubao",   hubLine:"MRT-3", hubMin:0,  hubKm:0,  hubMode:"origin"  },
-
-    // === EAST ===
     "Marikina":    { hub:"Santolan",        hubLine:"LRT-2", hubMin:15, hubKm:4,  hubMode:"jeepney" },
     "Antipolo":    { hub:"Santolan",        hubLine:"LRT-2", hubMin:30, hubKm:8,  hubMode:"jeepney" },
     "Katipunan":   { hub:"Katipunan",       hubLine:"LRT-2", hubMin:0,  hubKm:0,  hubMode:"origin"  },
@@ -121,54 +91,37 @@ const DB = {
     minPerStop:3
   },
 
-  // ── POINT-TO-POINT BUSES ─────────────────────────────────────────────────
-  // Sources: commutetour.com + LTFRB data (fares as of 2025-2026)
   p2p: [
-    // === FROM ALABANG (Starmall) ===
-    { from:"Alabang", to:"BGC",    bus:"HM Worthy",         fare:52,  min:45, note:"Via SLEX–C5, TRIPKO card. 6AM–8PM." },
-    { from:"Alabang", to:"Makati", bus:"Alabang–Ayala Bus",  fare:48,  min:35, note:"Via SLEX. 4AM–10PM. Also RRCG P2P from ATC/SouthPark to Glorietta." },
-    { from:"Alabang", to:"Cubao",  bus:"Alabang Metrolink / HM", fare:75, min:60, note:"Via EDSA. Also MRT: ride to Ayala, switch to MRT Cubao." },
-    { from:"Alabang", to:"MOA",    bus:"Alabang–Pasay Bus",  fare:40,  min:40, note:"Via EDSA." },
-    { from:"Alabang", to:"Ortigas",bus:"Starmall–Ortigas Bus",fare:65, min:55, note:"Via EDSA." },
-
-    // === FROM LAS PINAS ===
-    { from:"Las Pinas", to:"Makati", bus:"Las Piñas–Ayala Bus", fare:55, min:45, note:"Via Coastal Rd / SLEX." },
-
-    // === FROM PARANAQUE ===
-    { from:"Paranaque", to:"BGC",    bus:"HM Worthy / P2P",    fare:65, min:35, note:"Via C5." },
-    { from:"Paranaque", to:"Makati", bus:"Paranaque–Ayala Bus", fare:50, min:40, note:"Via SLEX." },
-    { from:"Paranaque", to:"MOA",    bus:"Paranaque–Pasay Bus", fare:30, min:25, note:"Via Coastal Rd." },
-
-    // === FROM CUBAO (Farmers / Araneta) ===
-    { from:"Cubao", to:"BGC",    bus:"HM Transport",            fare:85, min:40, note:"Via C5." },
-    { from:"Cubao", to:"Alabang",bus:"Alabang Metrolink",       fare:75, min:60, note:"Via EDSA–SLEX. Or MRT to Ayala, Ayala bus to Alabang." },
-    { from:"Cubao", to:"MOA",    bus:"EDSA Carousel / UV",      fare:30, min:45, note:"EDSA Carousel southbound to Taft, jeep to MOA." },
-    { from:"Cubao", to:"SM North",bus:"EDSA Carousel",          fare:15, min:20, note:"EDSA Carousel northbound." },
-
-    // === FROM NOVALICHES ===
-    { from:"Novaliches", to:"Makati", bus:"Novaliches–Ayala P2P", fare:90, min:60, note:"Via EDSA." },
-    { from:"Novaliches", to:"SM North",bus:"Jeep to North Ave",  fare:20, min:40, note:"Jeep to SM North / North Ave MRT." },
-
-    // === FROM/TO MOA ===
-    { from:"MOA", to:"Makati", bus:"EDSA Carousel / Green Frog", fare:30, min:30, note:"EDSA Carousel to Ayala or Green Frog Hybrid Bus (PITX–BGC via Buendia). Stops at MOA Globe." },
+    { from:"Alabang", to:"BGC",    bus:"HM Worthy",              fare:52, min:45, note:"Via SLEX–C5, TRIPKO card. 6AM–8PM." },
+    { from:"Alabang", to:"Makati", bus:"Alabang–Ayala Bus",       fare:48, min:35, note:"Via SLEX. 4AM–10PM. Also RRCG P2P from ATC/SouthPark to Glorietta." },
+    { from:"Alabang", to:"Cubao",  bus:"Alabang Metrolink / HM",  fare:75, min:60, note:"Via EDSA. Also MRT: ride to Ayala, switch to MRT Cubao." },
+    { from:"Alabang", to:"MOA",    bus:"Alabang–Pasay Bus",       fare:40, min:40, note:"Via EDSA." },
+    { from:"Alabang", to:"Ortigas",bus:"Starmall–Ortigas Bus",    fare:65, min:55, note:"Via EDSA." },
+    { from:"Las Pinas", to:"Makati", bus:"Las Piñas–Ayala Bus",   fare:55, min:45, note:"Via Coastal Rd / SLEX." },
+    { from:"Paranaque", to:"BGC",    bus:"HM Worthy / P2P",       fare:65, min:35, note:"Via C5." },
+    { from:"Paranaque", to:"Makati", bus:"Paranaque–Ayala Bus",    fare:50, min:40, note:"Via SLEX." },
+    { from:"Paranaque", to:"MOA",    bus:"Paranaque–Pasay Bus",    fare:30, min:25, note:"Via Coastal Rd." },
+    { from:"Cubao", to:"BGC",    bus:"HM Transport",              fare:85, min:40, note:"Via C5." },
+    { from:"Cubao", to:"Alabang",bus:"Alabang Metrolink",         fare:75, min:60, note:"Via EDSA–SLEX. Or MRT to Ayala, Ayala bus to Alabang." },
+    { from:"Cubao", to:"MOA",    bus:"EDSA Carousel / UV",        fare:30, min:45, note:"EDSA Carousel southbound to Taft, jeep to MOA." },
+    { from:"Cubao", to:"SM North",bus:"EDSA Carousel",            fare:15, min:20, note:"EDSA Carousel northbound." },
+    { from:"Novaliches", to:"Makati",   bus:"Novaliches–Ayala P2P", fare:90, min:60, note:"Via EDSA." },
+    { from:"Novaliches", to:"SM North", bus:"Jeep to North Ave",    fare:20, min:40, note:"Jeep to SM North / North Ave MRT." },
+    { from:"MOA", to:"Makati", bus:"EDSA Carousel / Green Frog",  fare:30, min:30, note:"EDSA Carousel to Ayala or Green Frog Hybrid Bus (PITX–BGC via Buendia). Stops at MOA Globe." },
     { from:"MOA", to:"BGC",    bus:"Green Frog Hybrid Bus",       fare:35, min:25, note:"Operates daily PITX–Uptown BGC via LRT Buendia. Stops at MOA Globe." },
     { from:"MOA", to:"Cubao",  bus:"EDSA Carousel",               fare:30, min:50, note:"Northbound EDSA Carousel." },
     { from:"MOA", to:"Manila", bus:"Jeep to Lawton / Luneta",     fare:13, min:30, note:"Modern jeep to Lawton or Luneta passing Intramuros." },
-
-    // === FROM PITX ===
-    { from:"PITX", to:"BGC",    bus:"Green Frog Hybrid Bus",      fare:40, min:35, note:"Direct PITX–Uptown BGC via LRT Buendia / Gil Puyat." },
-    { from:"PITX", to:"Makati", bus:"PITX–Ayala Bus",             fare:35, min:30, note:"Via EDSA." },
-    { from:"PITX", to:"MOA",    bus:"PITX–MOA Shuttle",           fare:20, min:15, note:"Short hop via Coastal Rd." },
-    { from:"PITX", to:"Cubao",  bus:"EDSA Carousel",              fare:30, min:55, note:"Northbound via EDSA." },
+    { from:"PITX", to:"BGC",     bus:"Green Frog Hybrid Bus",     fare:40, min:35, note:"Direct PITX–Uptown BGC via LRT Buendia / Gil Puyat." },
+    { from:"PITX", to:"Makati",  bus:"PITX–Ayala Bus",            fare:35, min:30, note:"Via EDSA." },
+    { from:"PITX", to:"MOA",     bus:"PITX–MOA Shuttle",          fare:20, min:15, note:"Short hop via Coastal Rd." },
+    { from:"PITX", to:"Cubao",   bus:"EDSA Carousel",             fare:30, min:55, note:"Northbound via EDSA." },
     { from:"PITX", to:"SM North",bus:"EDSA Carousel",             fare:30, min:60, note:"Northbound terminus." },
-    { from:"PITX", to:"Alabang",bus:"PITX–Alabang Bus",           fare:30, min:30, note:"Via Coastal Rd." },
-
-    // === BUENDIA TERMINAL ===
-    { from:"Buendia", to:"Cubao",  bus:"EDSA Carousel / Bus",     fare:25, min:35, note:"EDSA Carousel northbound or ordinary bus via EDSA." },
-    { from:"Buendia", to:"SM North",bus:"EDSA Carousel / Bus",    fare:28, min:50, note:"EDSA northbound." },
-    { from:"Buendia", to:"Alabang",bus:"Buendia–Alabang Bus",     fare:52, min:45, note:"Via EDSA–SLEX." },
-    { from:"Buendia", to:"MOA",   bus:"Jeep / Modern Jeep",       fare:13, min:20, note:"Jeep to EDSA/Taft then to MOA, or jeep to Buendia MRT jeep to MOA." },
-    { from:"Buendia", to:"BGC",   bus:"BGC Bus / Jeep",           fare:25, min:20, note:"Jeep to Guadalupe then BGC Bus, or direct jeep signboard BGC." },
+    { from:"PITX", to:"Alabang", bus:"PITX–Alabang Bus",          fare:30, min:30, note:"Via Coastal Rd." },
+    { from:"Buendia", to:"Cubao",    bus:"EDSA Carousel / Bus",   fare:25, min:35, note:"EDSA Carousel northbound or ordinary bus via EDSA." },
+    { from:"Buendia", to:"SM North", bus:"EDSA Carousel / Bus",   fare:28, min:50, note:"EDSA northbound." },
+    { from:"Buendia", to:"Alabang",  bus:"Buendia–Alabang Bus",   fare:52, min:45, note:"Via EDSA–SLEX." },
+    { from:"Buendia", to:"MOA",      bus:"Jeep / Modern Jeep",    fare:13, min:20, note:"Jeep to EDSA/Taft then to MOA, or jeep to Buendia MRT jeep to MOA." },
+    { from:"Buendia", to:"BGC",      bus:"BGC Bus / Jeep",        fare:25, min:20, note:"Jeep to Guadalupe then BGC Bus, or direct jeep signboard BGC." },
     { from:"Buendia", to:"Monumento",bus:"EDSA Bus",              fare:35, min:60, note:"Ordinary bus via EDSA northbound to Monumento." },
   ]
 };
@@ -209,8 +162,6 @@ function listPaths(resolved) {
     );
 
   // ── P2P bus routes (bidirectional, single best match) ──
-  // Try most-specific match first (area name), then fall back to hub name.
-  // Only ONE P2P path is added to prevent duplicate ROUTE_JSON output.
   const findP2P = (a, b) => DB.p2p.find(r =>
     (r.from === a && r.to === b) || (r.from === b && r.to === a)
   );
@@ -237,8 +188,7 @@ function listPaths(resolved) {
     });
   }
 
-  // Skip rail logic entirely if either end is a P2P-only hub (e.g. MOA, PITX, NAIA, Alabang)
-  // Those are served exclusively by the p2p[] bus entries above.
+  // Skip rail logic if either end is a P2P-only hub (MOA, PITX, NAIA, Alabang)
   if (!originArea || !destArea) return paths;
   if (originArea.hubLine === 'P2P' || destArea.hubLine === 'P2P') return paths;
 
@@ -264,13 +214,10 @@ function listPaths(resolved) {
     }
   }
 
-  // ── LRT-1 → MRT-3 (via Taft Ave / EDSA transfer) ──
-  // Guard: origin hub must not already be at EDSA (index 1 on LRT-1),
-  // otherwise the LRT-1 leg is 0 stops (EDSA→EDSA), which is invalid.
+  // ── LRT-1 → MRT-3 ──
   if (originArea.hubLine==='LRT-1' && destArea.hubLine==='MRT-3') {
     const oi=stationIdx(DB.lrt1,originArea.hub), edsa=stationIdx(DB.lrt1,'EDSA');
     const taft=stationIdx(DB.mrt3,'Taft Avenue'), di=stationIdx(DB.mrt3,destArea.hub);
-    // oi !== edsa ensures we actually ride at least one LRT-1 stop
     if (oi!==-1&&edsa!==-1&&taft!==-1&&di!==-1&&oi!==edsa) {
       paths.push({ id:'LRT1_MRT3', type:'rail_transfer',
         description:'LRT-1 → transfer Taft Ave → MRT-3',
@@ -303,7 +250,7 @@ function listPaths(resolved) {
     }
   }
 
-  // ── MRT-3 → LRT-2 (via Cubao interchange) ──
+  // ── MRT-3 → LRT-2 ──
   if (originArea.hubLine==='MRT-3' && destArea.hubLine==='LRT-2') {
     const oi=stationIdx(DB.mrt3,originArea.hub), c3=stationIdx(DB.mrt3,'Araneta-Cubao');
     const c2=stationIdx(DB.lrt2,'Araneta-Cubao'), di=stationIdx(DB.lrt2,destArea.hub);
@@ -346,49 +293,54 @@ function listPaths(resolved) {
 function readPath(p, isPeak) {
   const pm = isPeak ? 1.5 : 1;
   const segs = p.segments.map(s => {
-      let fare=0, min=s.min||0, label='', detail='';
-      if (s.mode==='MRT-3') {
-        const n=s.stops||1;
-        fare=DB.mrt3.fare[Math.min(n,12)]||28;
-        min=Math.ceil(n*DB.mrt3.minPerStop+5);
-        const dir = s.from && s.to ? (DB.mrt3.stations.indexOf(s.to) > DB.mrt3.stations.indexOf(s.from) ? 'Northbound' : 'Southbound') : '';
-        label=`MRT-3 ${dir}: ${s.from} → ${s.to}`;
-        detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Expect queues at turnstiles':''}`;
-      } else if (s.mode==='LRT-1') {
-        const n=s.stops||1;
-        fare=DB.lrt1.fare[Math.min(n,17)]||30;
-        min=Math.ceil(n*DB.lrt1.minPerStop+5);
-        const dir = DB.lrt1.stations.indexOf(s.to) > DB.lrt1.stations.indexOf(s.from) ? 'Northbound' : 'Southbound';
-        label=`LRT-1 ${dir}: ${s.from} → ${s.to}`;
-        detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Very crowded during rush hour':''}`;
-      } else if (s.mode==='LRT-2') {
-        const n=s.stops||1;
-        fare=DB.lrt2.fare[Math.min(n,10)]||22;
-        min=Math.ceil(n*DB.lrt2.minPerStop+4);
-        const dir = DB.lrt2.stations.indexOf(s.to) > DB.lrt2.stations.indexOf(s.from) ? 'Eastbound' : 'Westbound';
-        label=`LRT-2 ${dir}: ${s.from} → ${s.to}`;
-        detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}`;
-      } else if (s.mode==='jeepney') {
-        const km=s.km||4;
-        fare=km<=4?13:Math.ceil(13+(km-4)*1.80);
-        min=Math.ceil((s.min||20)*pm);
-        label=`Jeepney: ${s.from} → ${s.to}`;
-        detail=`Ride jeepney from ${s.from} going to ${s.to} · ~${km}km · Flag down along the route${isPeak?' · Heavy traffic expected':''}`;
-      } else if (s.mode==='walk') {
-        fare=0; min=s.min||5;
-        label=`Walk: ${s.from} → ${s.to}`;
-        detail=s.note||`Walk from ${s.from} to ${s.to}`;
-      } else if (s.mode==='p2p') {
-        fare=s.fare||0;
-        min=Math.ceil((s.min||40)*(isPeak?1.3:1));
-        label=`${s.bus||'P2P Bus'}: ${s.from} → ${s.to}`;
-        detail=`${s.note||'Air-conditioned · Fixed fare · No stops'}${isPeak?' · May be delayed due to traffic':''}`;
-      }
-      return {...s, fare, min, label, detail};
-    });
-  return {...p, segments:segs,
-    totalFare: segs.reduce((a,s)=>a+s.fare,0),
-    totalMin:  segs.reduce((a,s)=>a+s.min,0),
+    let fare=0, min=s.min||0, label='', detail='';
+    if (s.mode==='MRT-3') {
+      const n=s.stops||1;
+      fare=DB.mrt3.fare[Math.min(n,12)]||28;
+      min=Math.ceil(n*DB.mrt3.minPerStop+5);
+      const dir = s.from && s.to ? (DB.mrt3.stations.indexOf(s.to) > DB.mrt3.stations.indexOf(s.from) ? 'Northbound' : 'Southbound') : '';
+      label=`MRT-3 ${dir}: ${s.from} → ${s.to}`;
+      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Expect queues at turnstiles':''}`;
+    } else if (s.mode==='LRT-1') {
+      const n=s.stops||1;
+      fare=DB.lrt1.fare[Math.min(n,17)]||30;
+      min=Math.ceil(n*DB.lrt1.minPerStop+5);
+      const dir = DB.lrt1.stations.indexOf(s.to) > DB.lrt1.stations.indexOf(s.from) ? 'Northbound' : 'Southbound';
+      label=`LRT-1 ${dir}: ${s.from} → ${s.to}`;
+      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Very crowded during rush hour':''}`;
+    } else if (s.mode==='LRT-2') {
+      const n=s.stops||1;
+      fare=DB.lrt2.fare[Math.min(n,10)]||22;
+      min=Math.ceil(n*DB.lrt2.minPerStop+4);
+      const dir = DB.lrt2.stations.indexOf(s.to) > DB.lrt2.stations.indexOf(s.from) ? 'Eastbound' : 'Westbound';
+      label=`LRT-2 ${dir}: ${s.from} → ${s.to}`;
+      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}`;
+    } else if (s.mode==='jeepney') {
+      const km=s.km||4;
+      fare=km<=4?13:Math.ceil(13+(km-4)*1.80);
+      min=Math.ceil((s.min||20)*pm);
+      label=`Jeepney: ${s.from} → ${s.to}`;
+      detail=`Ride jeepney from ${s.from} going to ${s.to} · ~${km}km · Flag down along the route${isPeak?' · Heavy traffic expected':''}`;
+    } else if (s.mode==='walk') {
+      fare=0; min=s.min||5;
+      label=`Walk: ${s.from} → ${s.to}`;
+      detail=s.note||`Walk from ${s.from} to ${s.to}`;
+    } else if (s.mode==='p2p') {
+      fare=s.fare||0;
+      min=Math.ceil((s.min||40)*(isPeak?1.3:1));
+      label=`${s.bus||'P2P Bus'}: ${s.from} → ${s.to}`;
+      detail=`${s.note||'Air-conditioned · Fixed fare · No stops'}${isPeak?' · May be delayed due to traffic':''}`;
+    }
+    return {...s, fare, min, label, detail};
+  });
+
+  // FIX 2: Remove nonsense segments where from === to
+  // This prevents "Jeepney: Ortigas → Ortigas" when destination hub === destination name
+  const filteredSegs = segs.filter(s => !s.from || !s.to || s.from !== s.to);
+
+  return {...p, segments:filteredSegs,
+    totalFare: filteredSegs.reduce((a,s)=>a+s.fare,0),
+    totalMin:  filteredSegs.reduce((a,s)=>a+s.min,0),
     isPeak};
 }
 
@@ -419,33 +371,24 @@ function parseUserInput(message) {
 
   let origin=null, destination=null;
 
-  // Must have a route-intent keyword before we attempt to parse origin/destination
   const hasRouteIntent = /\b(to|papunta|goin|going|from|paano|how.*go|how.*get|how.*reach|directions?|route|commute|sakay)\b/i.test(message);
+  if (!hasRouteIntent) return { origin: null, destination: null, budget, isPeak };
 
-  if (!hasRouteIntent) {
-    return { origin: null, destination: null, budget, isPeak };
-  }
-
-  // Try "X to Y" pattern
   const m = message.match(/(?:from\s+)?(.+?)\s+to\s+(.+?)(?:\s*[,.]|$|\s+budget|\s+[₱p]\d|\s+need|\s+by\s+\d)/i);
   if (m) {
     const rawOrigin = m[1].replace(/^(from|sa|paano|how.*go|how.*get)\s+/i,'').trim();
     const rawDest   = m[2].trim();
-
-    // Reject if origin looks like a question phrase rather than a place
     const questionPhrases = /^(how|what|where|when|why|can|is|are|do|does|i|we|you)/i;
-    if (questionPhrases.test(rawOrigin)) {
-      return { origin: null, destination: null, budget, isPeak };
+    if (!questionPhrases.test(rawOrigin)) {
+      origin      = rawOrigin;
+      destination = rawDest;
     }
-
-    origin      = rawOrigin;
-    destination = rawDest;
   }
 
   return { origin, destination, budget, isPeak };
 }
 
-// ── BUILD ROUTE JSON (server-side, no Gemini needed) ──
+// ── BUILD ROUTE JSON ──────────────────────────────
 function buildRouteJson(context, origin, destination) {
   const rec = context.recommended;
   if (!rec) return null;
@@ -455,7 +398,12 @@ function buildRouteJson(context, origin, destination) {
     totalFare: rec.totalFare,
     totalMin: rec.totalMin,
     steps: rec.segments.map(s => ({
-      type: s.mode==='MRT-3'?'mrt':s.mode==='LRT-1'||s.mode==='LRT-2'?'lrt':s.mode==='p2p'?'bus':s.mode,
+      // FIX 1: correct type mapping — jeepney → 'jeep', walk → 'walk'
+      type: s.mode==='MRT-3'   ? 'mrt'  :
+            s.mode==='LRT-1' || s.mode==='LRT-2' ? 'lrt' :
+            s.mode==='p2p'   ? 'bus'  :
+            s.mode==='jeepney' ? 'jeep' :
+            s.mode==='walk'  ? 'walk' : 'walk',
       label: s.label,
       detail: s.detail,
       fare: s.fare,
@@ -516,16 +464,38 @@ function callGeminiRaw(systemPrompt, userMessage, history) {
   });
 }
 
-// ── GEMINI CALL (WITH SYSTEM PROMPT) ──────────────
 function callGemini(systemPrompt, userMessage, history) {
   return callGeminiRaw(systemPrompt, userMessage, history);
 }
 
-// ── SYSTEM PROMPT ─────────────────────────────────
+// ── SYSTEM PROMPTS ────────────────────────────────
 const NARRATION_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
-The route has already been computed. Write ONLY a warm 1-2 sentence introduction for it.
-Do NOT output JSON, numbers, or any route data. Just a friendly sentence or two in English with light Taglish.
-Example: "Sige, found a good route for you! This combo gets you there in about an hour without breaking the bank."`;
+The route has already been computed. Write ONLY a warm introduction for it.
+Write ONE sentence in English, then repeat the same idea in ONE sentence in Filipino/Tagalog.
+Do NOT output JSON, numbers, or any route data. Just the two sentences — nothing else.
+Example:
+"Found a good route for you — this combo gets you there without breaking the bank!
+May nakita akong magandang ruta para sa iyo — makakarating ka nang hindi masyadong mahal!"`;
+
+const TRIAGE_PROMPT = `You are SaanPH, a Metro Manila commute assistant.
+Read the FULL conversation history carefully.
+
+STEP 1 — Check if the user is asking a follow-up about an already-shown route.
+Follow-up phrases include: "more options", "other options", "alternative", "another way",
+"cheaper", "faster", "less transfers", "ibang route", "may iba pa", "alternatives".
+If yes, output ONLY: SHOW_ALTERNATIVES
+
+STEP 2 — Check if the user wants a brand-new route (different origin/destination).
+If yes, extract origin and destination and output ONLY:
+ROUTE_READY: origin="X" destination="Y"
+
+STEP 3 — If you cannot determine origin or destination, ask ONE short question. No bullets. Max 1 sentence.
+
+Known Manila landmarks:
+- "One Ayala", "Ayala Center", "Glorietta", "Greenbelt" = Makati
+- "MOA", "Mall of Asia", "SM MOA" = MOA
+- "BGC", "Bonifacio", "Fort" = BGC
+- "DLSU", "Taft Ave", "Vito Cruz" = Taft area`;
 
 // ── HELPERS ───────────────────────────────────────
 function readBody(req) {
@@ -549,53 +519,37 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
   if (req.method==='OPTIONS') { res.writeHead(204); res.end(); return; }
 
-if (req.method==='POST' && req.url.startsWith('/api/chat')) {
-  try {
-    const { message, history=[], mode='cheapest' } = await readBody(req);
-    const pipelineLog = [];
-    const log = (stage, data) => pipelineLog.push({ stage, data });
+  if (req.method==='POST' && req.url.startsWith('/api/chat')) {
+    try {
+      const { message, history=[], mode='cheapest' } = await readBody(req);
+      const pipelineLog = [];
+      const log = (stage, data) => pipelineLog.push({ stage, data });
 
-    const quickParse = parseUserInput(message);
-if (quickParse.origin && quickParse.destination) {
-  log('fast_path', { origin: quickParse.origin, destination: quickParse.destination });
-  const resolved = resolveLocations(quickParse.origin, quickParse.destination);
-  const paths = listPaths(resolved);
-  if (paths.length > 0) {
-    const fullContext = [...history.map(m => m.text||''), message].join(' ');
-    const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
-    const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
-    const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
-    const readPaths = paths.map(p => readPath(p, isPeak));
-    const context = getContext(readPaths, budget, mode);
-    const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
-    const intro = await callGemini(NARRATION_PROMPT, `Route: ${resolved.origin} to ${resolved.destination}.`, [])
-      .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
-    sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`, pipelineLog });
-    return;
-  }
-}
-    // ── STEP 0: Gemini triages the conversation ──
-    // Reads full history + current message, decides if ready to route
-const TRIAGE_PROMPT = `You are SaanPH, a Metro Manila commute assistant.
-Read the FULL conversation history carefully. Your job is to extract origin and destination.
+      // FIX 3: Fast path only fires on the FIRST message (no history).
+      // Follow-up questions like "are there other options?" must go through triage
+      // so Gemini can read context and decide what to do — not re-run the same route.
+      const quickParse = history.length === 0 ? parseUserInput(message) : { origin: null, destination: null };
 
-Known Manila landmarks (use these to normalize):
-- "One Ayala", "Ayala Center", "Glorietta", "Greenbelt" = Makati
-- "MOA", "Mall of Asia", "SM MOA" = MOA
-- "BGC", "Bonifacio", "Fort" = BGC
-- "DLSU", "Taft Ave", "Vito Cruz" = Taft area
+      if (quickParse.origin && quickParse.destination) {
+        log('fast_path', { origin: quickParse.origin, destination: quickParse.destination });
+        const resolved = resolveLocations(quickParse.origin, quickParse.destination);
+        const paths = listPaths(resolved);
+        if (paths.length > 0) {
+          const fullContext = message;
+          const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
+          const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
+          const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
+          const readPaths = paths.map(p => readPath(p, isPeak));
+          const context = getContext(readPaths, budget, mode);
+          const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
+          const intro = await callGemini(NARRATION_PROMPT, `Route: ${resolved.origin} to ${resolved.destination}.`, [])
+            .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+          sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`, pipelineLog });
+          return;
+        }
+      }
 
-If the conversation history shows the user already answered a question about origin OR destination,
-combine that with the current message to extract both.
-
-Example: if history shows "Where in Makati?" and user replied "One Ayala 3pm" and destination was "MOA",
-then origin = "Makati" and destination = "MOA".
-
-If you have BOTH origin and destination, output ONLY this exact line (nothing else):
-ROUTE_READY: origin="X" destination="Y"
-
-If you still need ONE piece of info, ask ONE short question only. No bullet points. Max 1 sentence.`;
-
+      // ── Triage via Gemini ──
       const rawHistory = history
         .filter(m => m.role && (m.text || m.parts?.[0]?.text))
         .map(m => ({
@@ -603,7 +557,7 @@ If you still need ONE piece of info, ask ONE short question only. No bullet poin
           parts: [{ text: (m.text || m.parts?.[0]?.text || '').replace(/ROUTE_JSON:[\s\S]*/,'').trim() }]
         }));
 
-      // Ensure strict alternation — Gemini requires user/model/user/model
+      // Enforce strict user/model alternation required by Gemini API
       const triageHistory = [];
       let lastRole = null;
       for (const msg of rawHistory) {
@@ -612,95 +566,129 @@ If you still need ONE piece of info, ask ONE short question only. No bullet poin
           lastRole = msg.role;
         }
       }
-      // Must start with user
       if (triageHistory.length > 0 && triageHistory[0].role !== 'user') {
         triageHistory.shift();
       }
 
-    let triageReply = null;
-    let triageError = null;
+      // ── PRE-CHECK: detect follow-up intent WITHOUT calling Gemini ──
+      // This prevents Gemini from ignoring the intent and re-running the route.
+      const isFollowUpIntent = /more options?|other options?|alternative|another (way|route|option)|cheaper|fastest|less transfer|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(message);
 
-    try {
-      triageReply = await callGeminiRaw(TRIAGE_PROMPT, message, triageHistory);
-    } catch(e) {
-      triageError = e.message;
-    }
+      let triageReply = null;
+      let triageError = null;
 
-    log('triage', { reply: triageReply, error: triageError });
-
-    // If Gemini failed entirely, fall back to direct parse
-    if (!triageReply) {
-      const parsed = parseUserInput(message);
-      if (parsed.origin && parsed.destination) {
-        triageReply = `ROUTE_READY: origin="${parsed.origin}" destination="${parsed.destination}"`;
+      if (isFollowUpIntent) {
+        triageReply = 'SHOW_ALTERNATIVES';
+        log('triage', { reply: triageReply, source: 'pre-check' });
       } else {
-        sendJson(res, 200, { type:'chat', text: `Saan ka galing at saan ka pupunta? (Error: ${triageError||'no response'})`, pipelineLog });
+        try {
+          triageReply = await callGeminiRaw(TRIAGE_PROMPT, message, triageHistory);
+        } catch(e) {
+          triageError = e.message;
+        }
+
+        log('triage', { reply: triageReply, error: triageError });
+
+        if (!triageReply) {
+          const parsed = parseUserInput(message);
+          if (parsed.origin && parsed.destination) {
+            triageReply = `ROUTE_READY: origin="${parsed.origin}" destination="${parsed.destination}"`;
+          } else {
+            sendJson(res, 200, { type:'chat', text: `Saan ka galing at saan ka pupunta? (Error: ${triageError||'no response'})`, pipelineLog });
+            return;
+          }
+        }
+      }
+
+      // Handle follow-up: "more options", "alternatives", etc.
+      if (/SHOW_ALTERNATIVES/i.test(triageReply)) {
+        // Extract origin/dest from the route card title in history (e.g. "Paranaque → Cubao")
+        // Search all history messages for the arrow pattern used in route titles
+        const historyText = [...history].map(m => m.text||m.parts?.[0]?.text||'').join('\n');
+        const prevRoute = historyText.match(/([\w\s]+?)\s*→\s*([\w\s]+?)(?:\n|\\n|$)/m);
+
+        if (prevRoute) {
+          const altResolved = resolveLocations(prevRoute[1].trim(), prevRoute[2].trim());
+          const altPaths = listPaths(altResolved);
+          if (altPaths.length > 1) {
+            const fullContext = [...history.map(m => m.text||''), message].join(' ');
+            const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
+            const readPaths = altPaths.map(p => readPath(p, isPeak));
+            // Sort all by fare and skip the first (already shown), show the rest
+            const sorted = [...readPaths].sort((a,b) => a.totalFare - b.totalFare);
+            const alts = sorted.slice(1);
+            if (alts.length > 0) {
+              const altContext = getContext(alts, null, mode);
+              const altJson = buildRouteJson(altContext, altResolved.origin, altResolved.destination);
+              const intro = await callGemini(NARRATION_PROMPT,
+                `Alternative route: ${altResolved.origin} to ${altResolved.destination}.`, triageHistory)
+                .catch(() => `Here's another option for you!`);
+              sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(altJson)}`, pipelineLog });
+              return;
+            }
+          }
+        }
+        // No alternatives found
+        sendJson(res, 200, { type:'chat', text: `Sorry, wala na akong ibang route options para sa route na yon. Subukan mo mag-specify ng ibang area!`, pipelineLog });
         return;
       }
+
+      const routeReadyMatch = triageReply.match(/ROUTE_READY:\s*origin="([^"]+)"\s*destination="([^"]+)"/i);
+
+      if (!routeReadyMatch) {
+        sendJson(res, 200, { type:'chat', text: triageReply, pipelineLog });
+        return;
+      }
+
+      const extractedOrigin = routeReadyMatch[1].trim();
+      const extractedDest   = routeReadyMatch[2].trim();
+      log('extracted', { origin: extractedOrigin, destination: extractedDest });
+
+      const fullContext = [...history.map(m => m.text||''), message].join(' ');
+      const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
+      const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
+      const isPeak  = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
+
+      const resolved = resolveLocations(extractedOrigin, extractedDest);
+      log('resolve', { origin: resolved.origin, destination: resolved.destination });
+
+      const paths = listPaths(resolved);
+      log('paths', paths.map(p => p.description));
+
+      if (paths.length === 0) {
+        const reply = await callGemini(
+          `You are SakayAI. No route found between "${resolved.origin}" and "${resolved.destination}". 
+           Tell the user briefly and suggest they rephrase using simpler area names. Be short and friendly.`,
+          `No route: ${resolved.origin} → ${resolved.destination}`, triageHistory
+        ).catch(() => `Hindi ko mahanap ang route between ${resolved.origin} and ${resolved.destination}. Try mo ulit with a nearby landmark!`);
+        sendJson(res, 200, { type:'chat', text: reply, pipelineLog });
+        return;
+      }
+
+      const readPaths = paths.map(p => readPath(p, isPeak));
+      log('fares', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
+
+      const context = getContext(readPaths, budget, mode);
+      log('ranked', { recommended: context.recommended?.id, budgetWarning: context.budgetWarning });
+
+      const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
+      log('route_json', routeJson);
+
+      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning||''}`;
+      const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
+        .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+
+      sendJson(res, 200, {
+        type: 'route',
+        text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`,
+        pipelineLog
+      });
+
+    } catch(e) {
+      sendJson(res, 500, { error: e.message||'Server error' });
     }
-
-    const routeReadyMatch = triageReply.match(/ROUTE_READY:\s*origin="([^"]+)"\s*destination="([^"]+)"/i);
-
-    if (!routeReadyMatch) {
-      sendJson(res, 200, { type:'chat', text: triageReply, pipelineLog });
-      return;
-    }
-
-    // Ready — extract origin + destination Gemini identified
-    const extractedOrigin = routeReadyMatch[1].trim();
-    const extractedDest   = routeReadyMatch[2].trim();
-    log('extracted', { origin: extractedOrigin, destination: extractedDest });
-
-    // Parse budget + peak hour from full conversation context
-    const fullContext = [...history.map(m => m.text||''), message].join(' ');
-    const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
-    const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
-    const isPeak  = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
-
-    // STAGE 1
-    const resolved = resolveLocations(extractedOrigin, extractedDest);
-    log('resolve', { origin: resolved.origin, destination: resolved.destination });
-
-    // STAGE 2
-    const paths = listPaths(resolved);
-    log('paths', paths.map(p => p.description));
-
-    if (paths.length === 0) {
-      const reply = await callGemini(
-        `You are SakayAI. No route found between "${resolved.origin}" and "${resolved.destination}". 
-         Tell the user briefly and suggest they rephrase using simpler area names. Be short and friendly.`,
-        `No route: ${resolved.origin} → ${resolved.destination}`, triageHistory
-      ).catch(() => `Hindi ko mahanap ang route between ${resolved.origin} and ${resolved.destination}. Try mo ulit with a nearby landmark!`);
-      sendJson(res, 200, { type:'chat', text: reply, pipelineLog });
-      return;
-    }
-
-    // STAGE 3
-    const readPaths = paths.map(p => readPath(p, isPeak));
-    log('fares', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
-
-    // STAGE 4
-    const context = getContext(readPaths, budget, mode);
-    log('ranked', { recommended: context.recommended?.id, budgetWarning: context.budgetWarning });
-
-    const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
-    log('route_json', routeJson);
-
-    const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning||''}`;
-    const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
-      .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
-
-    sendJson(res, 200, {
-      type: 'route',
-      text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`,
-      pipelineLog
-    });
-
-  } catch(e) {
-    sendJson(res, 500, { error: e.message||'Server error' });
+    return;
   }
-  return;
-}
 
   // Static files
   let filePath = path.join(__dirname, req.url==='/'?'index.html':req.url);

@@ -892,7 +892,6 @@ function buildCard(d) {
   return `<div class="route-card">
     <div class="rc-header">
       <div class="rc-title">${d.title||'Your Route'}</div>
-      <div class="rc-meta">${d.transfers||0} transfer${d.transfers!==1?'s':''}</div>
     </div>
     ${steps}
   </div>`;
