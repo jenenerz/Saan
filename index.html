@@ -460,6 +460,7 @@ body {
 
 .input-field {
   flex: 1;
+  min-width: 200px;
   font-family: 'Space Mono', monospace;
   font-size: 14px;
   color: #111;
@@ -497,6 +498,31 @@ body {
 .send-btn:active { transform: scale(0.95); }
 .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .send-btn:disabled:hover { background: #1A1A1A; }
+
+.new-route-btn {
+  width: auto;
+  min-width: 52px;
+  background: #1A1A1A;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F0EBE0;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  padding: 0 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.new-route-btn:hover { background: #E63329; }
+.new-route-btn:active { transform: scale(0.95); }
 
 /* AGENT LOG (hidden sidebar on left bottom) */
 .agent-log-section {
@@ -582,7 +608,9 @@ body {
   .empty-state { padding: 24px 20px 16px; }
   .big-question { font-size: 48px; }
   .msg-user, .msg-bot-wrap { padding: 16px 20px; }
-  .input-bar { padding: 12px 20px 20px; }
+  .input-bar { padding: 12px 20px 20px; gap: 8px; }
+  .input-field { min-width: 120px; }
+  .new-route-btn { font-size: 9px; min-width: 44px; padding: 0 8px; }
 }
 </style>
 </head>
@@ -693,7 +721,6 @@ body {
     <!-- TOP BAR -->
     <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 40px;border-bottom:1px solid #E0DAD0;">
       <span style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#999;">Commute Planner</span>
-      <button onclick="goHome()" style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;background:none;border:1px solid #CCC;border-radius:4px;padding:6px 14px;cursor:pointer;color:#555;transition:all 0.15s;" onmouseover="this.style.borderColor='#111';this.style.color='#111'" onmouseout="this.style.borderColor='#CCC';this.style.color='#555'">↩ NEW ROUTE</button>
     </div>
 
     <!-- CHAT / EMPTY -->
@@ -739,6 +766,7 @@ body {
         onkeydown="handleKey(event)"
         oninput="autoGrow(this)"
       ></textarea>
+      <button class="new-route-btn" onclick="goHome()" title="New Route">↻ New Route</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">▶</button>
     </div>
 
