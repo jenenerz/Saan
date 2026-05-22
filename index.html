@@ -322,16 +322,40 @@ body {
 
 .step-row {
   display: grid;
-  grid-template-columns: 52px 1fr;
+  grid-template-columns: 28px 52px 1fr;
   gap: 14px;
   align-items: center;
   padding: 12px 20px;
   border-bottom: 1px solid #F0EBE0;
   transition: background 0.12s;
+  position: relative;
 }
 
 .step-row:hover { background: #FAFAF7; }
 .step-row:last-of-type { border-bottom: none; }
+
+.step-row::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 52px;
+  width: 2px;
+  height: calc(100% - 52px + 12px);
+  background: #E0DAD0;
+  z-index: 0;
+}
+
+.step-row:last-of-type::after { display: none; }
+
+.step-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: #DDD;
+  text-align: center;
+  line-height: 1;
+  font-weight: 700;
+  z-index: 1;
+}
 
 .step-badge {
   font-family: 'Space Mono', monospace;
@@ -877,10 +901,11 @@ function renderReply(text) {
 const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', walk:'WALK', p2p:'P2P' };
 
 function buildCard(d) {
-  const steps = (d.steps||[]).map(s => {
+  const steps = (d.steps||[]).map((s, i) => {
     const t = (s.type||'walk').toLowerCase().replace(/[^a-z]/g,'');
     const cls = ['mrt','lrt','jeep','bus'].includes(t) ? t : 'walk';
     return `<div class="step-row">
+      <div class="step-num">${i + 1}</div>
       <div class="step-badge ${cls}">${modeMap[t]||'WALK'}</div>
       <div class="step-info">
         <div class="step-lbl">${s.label||''}</div>
