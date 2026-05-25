@@ -510,32 +510,26 @@ function readPath(p, isPeak) {
 }
 
 // ── STAGE 4: get_context ──────────────────────────
-function getContext(readPaths, budget) {
-  const pool = readPaths.filter(p=>!budget||p.totalFare<=budget);
-  const ranked = [...(pool.length?pool:readPaths)].sort((a,b)=>a.totalFare-b.totalFare);
+function getContext(readPaths) {
+  const ranked = [...readPaths];
   return {
     allPaths: readPaths,
     recommended: ranked[0]||null,
-    alternatives: ranked.slice(1,3),
-    budgetWarning: budget && ranked[0] && ranked[0].totalFare>budget
-      ? `All routes exceed ₱${budget}. Cheapest is ₱${Math.min(...readPaths.map(p=>p.totalFare))}.`
-      : null
+    alternatives: ranked.slice(1,3)
   };
 }
 
 // ── PARSE USER INPUT ──────────────────────────────
 function parseUserInput(message) {
   const text = message.toLowerCase();
-  const budgetMatch = text.match(/[₱p](\d+)|(\d+)\s*peso/i);
-  const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
   const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(text);
 
   let origin=null, destination=null;
 
   const hasRouteIntent = /\b(to|papunta|goin|going|from|paano|how.*go|how.*get|how.*reach|directions?|route|commute|sakay)\b/i.test(message);
-  if (!hasRouteIntent) return { origin: null, destination: null, budget, isPeak };
+  if (!hasRouteIntent) return { origin: null, destination: null, isPeak };
 
-  const m = message.match(/(?:from\s+)?(.+?)\s+to\s+(.+?)(?:\s*[,.]|$|\s+budget|\s+[₱p]\d|\s+need|\s+by\s+\d)/i);
+  const m = message.match(/(?:from\s+)?(.+?)\s+to\s+(.+?)(?:\s*[,.]|$|\s+[₱p]\d|\s+need|\s+by\s+\d)/i);
   if (m) {
     const rawOrigin = m[1].replace(/^(from|sa|paano|how.*go|how.*get)\s+/i,'').trim();
     const rawDest   = m[2].trim();
@@ -546,7 +540,7 @@ function parseUserInput(message) {
     }
   }
 
-  return { origin, destination, budget, isPeak };
+  return { origin, destination, isPeak };
 }
 
 // ── BUILD ROUTE JSON ──────────────────────────────
@@ -635,15 +629,15 @@ Write ONE sentence in English, then repeat the same idea in ONE sentence in Fili
 If weather data is provided and it mentions rain, thunder, or drizzle, naturally mention bringing an umbrella.
 Do NOT output JSON, numbers, or any route data. Just the two sentences — nothing else.
 Example:
-"Found a good route for you — this combo gets you there without breaking the bank!
-May nakita akong magandang ruta para sa iyo — makakarating ka nang hindi masyadong mahal!"`;
+"Found a good route for you - this combo should be easy to follow!
+May nakita akong magandang ruta para sa iyo - madali itong sundan!"`;
 
 const TRIAGE_PROMPT = `You are SaanPH, a Metro Manila commute assistant.
 Read the FULL conversation history carefully.
 
 STEP 1 — Check if the user is asking a follow-up about an already-shown route.
 Follow-up phrases include: "more options", "other options", "alternative", "another way",
-"cheaper", "faster", "less transfers", "ibang route", "may iba pa", "alternatives".
+"ibang route", "may iba pa", "alternatives".
 If yes, output ONLY: SHOW_ALTERNATIVES
 
 STEP 2 — Check if the user is asking about weather for a specific location and time.
@@ -709,17 +703,15 @@ const server = http.createServer(async (req, res) => {
         const resolved = resolveLocations(quickParse.origin, quickParse.destination);
         const paths = listPaths(resolved);
         if (paths.length > 0) {
-          const budgetMatch = message.match(/[₱p](\d+)|(\d+)\s*peso/i);
-          const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
           const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(message.toLowerCase());
           const readPaths = paths.map(p => readPath(p, isPeak));
-          const context = getContext(readPaths, budget);
+          const context = getContext(readPaths);
           const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
 
           const weather = await getWeather(resolved.destination);
 
           const weatherNote = buildWeatherNote(weather);
-          const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning || ''} ${weatherNote}`.trim();
+          const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
 
           const intro = await callGemini(NARRATION_PROMPT, introContext, [])
             .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
@@ -751,7 +743,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Pre-check: detect follow-up intent WITHOUT calling Gemini
-      const isFollowUpIntent = /more options?|other options?|alternative|another (way|route|option)|cheaper|fastest|less transfer|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(message);
+      const isFollowUpIntent = /more options?|other options?|alternative|another (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(message);
 
       let triageReply = null;
       let triageError = null;
@@ -820,10 +812,9 @@ const server = http.createServer(async (req, res) => {
             const fullContext = [...history.map(m => m.text||''), message].join(' ');
             const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
             const readPaths = altPaths.map(p => readPath(p, isPeak));
-            const sorted = [...readPaths].sort((a,b) => a.totalFare - b.totalFare);
-            const alts = sorted.slice(1);
+            const alts = readPaths.slice(1);
             if (alts.length > 0) {
-              const altContext = getContext(alts, null);
+              const altContext = getContext(alts);
               const altJson = buildRouteJson(altContext, altResolved.origin, altResolved.destination);
 
               const weather = await getWeather(altResolved.destination);
@@ -854,8 +845,6 @@ const server = http.createServer(async (req, res) => {
       const extractedDest   = routeReadyMatch[2].trim();
 
       const fullContext = [...history.map(m => m.text||''), message].join(' ');
-      const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
-      const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
       const isPeak  = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
 
       const resolved = resolveLocations(extractedOrigin, extractedDest);
@@ -876,14 +865,14 @@ const server = http.createServer(async (req, res) => {
       const readPaths = paths.map(p => readPath(p, isPeak));
       log('fares', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
 
-      const context = getContext(readPaths, budget);
+      const context = getContext(readPaths);
 
       const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
 
       const weather = await getWeather(resolved.destination);
 
       const weatherNote = buildWeatherNote(weather);
-      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning || ''} ${weatherNote}`.trim();
+      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
 
       const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
         .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
