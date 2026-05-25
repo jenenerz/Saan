@@ -510,13 +510,9 @@ function readPath(p, isPeak) {
 }
 
 // ── STAGE 4: get_context ──────────────────────────
-function getContext(readPaths, budget, mode) {
+function getContext(readPaths, budget) {
   const pool = readPaths.filter(p=>!budget||p.totalFare<=budget);
-  const ranked = [...(pool.length?pool:readPaths)].sort((a,b)=>
-    mode==='fastest' ? a.totalMin-b.totalMin :
-    mode==='least_transfers' ? a.transfers-b.transfers :
-    a.totalFare-b.totalFare
-  );
+  const ranked = [...(pool.length?pool:readPaths)].sort((a,b)=>a.totalFare-b.totalFare);
   return {
     allPaths: readPaths,
     recommended: ranked[0]||null,
@@ -704,15 +700,12 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method==='POST' && req.url.startsWith('/api/chat')) {
     try {
-      const { message, history=[], mode='cheapest' } = await readBody(req);
-      const pipelineLog = [];
-      const log = (stage, data) => pipelineLog.push({ stage, data });
+      const { message, history=[] } = await readBody(req);
 
       // Fast path only fires on the FIRST message (no history).
       const quickParse = history.length === 0 ? parseUserInput(message) : { origin: null, destination: null };
 
       if (quickParse.origin && quickParse.destination) {
-        log('fast_path', { origin: quickParse.origin, destination: quickParse.destination });
         const resolved = resolveLocations(quickParse.origin, quickParse.destination);
         const paths = listPaths(resolved);
         if (paths.length > 0) {
@@ -720,11 +713,10 @@ const server = http.createServer(async (req, res) => {
           const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
           const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(message.toLowerCase());
           const readPaths = paths.map(p => readPath(p, isPeak));
-          const context = getContext(readPaths, budget, mode);
+          const context = getContext(readPaths, budget);
           const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
 
           const weather = await getWeather(resolved.destination);
-          log('weather', weather ? { city: weather.city, description: weather.description, temp: weather.temp, isRainy: weather.isRainy } : { status: 'unavailable' });
 
           const weatherNote = buildWeatherNote(weather);
           const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning || ''} ${weatherNote}`.trim();
@@ -732,7 +724,7 @@ const server = http.createServer(async (req, res) => {
           const intro = await callGemini(NARRATION_PROMPT, introContext, [])
             .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
 
-          sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`, pipelineLog });
+          sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}` });
           return;
         }
       }
@@ -766,7 +758,6 @@ const server = http.createServer(async (req, res) => {
 
       if (isFollowUpIntent) {
         triageReply = 'SHOW_ALTERNATIVES';
-        log('triage', { reply: triageReply, source: 'pre-check' });
       } else {
         try {
           triageReply = await callGeminiRaw(TRIAGE_PROMPT, message, triageHistory);
@@ -774,14 +765,12 @@ const server = http.createServer(async (req, res) => {
           triageError = e.message;
         }
 
-        log('triage', { reply: triageReply, error: triageError });
-
         if (!triageReply) {
           const parsed = parseUserInput(message);
           if (parsed.origin && parsed.destination) {
             triageReply = `ROUTE_READY: origin="${parsed.origin}" destination="${parsed.destination}"`;
           } else {
-            sendJson(res, 200, { type:'chat', text: `Saan ka galing at saan ka pupunta? (Error: ${triageError||'no response'})`, pipelineLog });
+            sendJson(res, 200, { type:'chat', text: `Saan ka galing at saan ka pupunta? (Error: ${triageError||'no response'})` });
             return;
           }
         }
@@ -792,7 +781,6 @@ const server = http.createServer(async (req, res) => {
       if (weatherQueryMatch) {
         const weatherLocation = weatherQueryMatch[1].trim();
         const weatherTimeStr  = weatherQueryMatch[2].trim();
-        log('weather_query', { location: weatherLocation, time: weatherTimeStr });
 
         // Resolve the location using the existing alias system
         const resolvedLocation = resolveLocations(weatherLocation, weatherLocation).origin;
@@ -806,10 +794,8 @@ const server = http.createServer(async (req, res) => {
           forecastResult = await getWeatherForecast(resolvedLocation, targetHour);
         }
 
-        log('forecast', forecastResult ? { city: forecastResult.city, description: forecastResult.description, temp: forecastResult.temp, isRainy: forecastResult.isRainy, displayTime: forecastResult.displayTime } : { status: 'unavailable' });
-
         if (!forecastResult) {
-          sendJson(res, 200, { type:'chat', text: `Sorry, hindi ko makuha ang weather data para sa ${resolvedLocation} ngayon. Try again later!`, pipelineLog });
+          sendJson(res, 200, { type:'chat', text: `Sorry, hindi ko makuha ang weather data para sa ${resolvedLocation} ngayon. Try again later!` });
           return;
         }
 
@@ -818,7 +804,7 @@ const server = http.createServer(async (req, res) => {
         const weatherAnswer = await callGemini(WEATHER_ANSWER_PROMPT, forecastContext, triageHistory)
           .catch(() => `At ${forecastResult.displayTime} in ${resolvedLocation}: ${forecastResult.description}, ${forecastResult.temp}°C.${forecastResult.isRainy ? ' Magdala ng payong!' : ''}`);
 
-        sendJson(res, 200, { type:'chat', text: weatherAnswer.trim(), pipelineLog });
+        sendJson(res, 200, { type:'chat', text: weatherAnswer.trim() });
         return;
       }
 
@@ -837,23 +823,22 @@ const server = http.createServer(async (req, res) => {
             const sorted = [...readPaths].sort((a,b) => a.totalFare - b.totalFare);
             const alts = sorted.slice(1);
             if (alts.length > 0) {
-              const altContext = getContext(alts, null, mode);
+              const altContext = getContext(alts, null);
               const altJson = buildRouteJson(altContext, altResolved.origin, altResolved.destination);
 
               const weather = await getWeather(altResolved.destination);
-              log('weather', weather ? { city: weather.city, description: weather.description, temp: weather.temp, isRainy: weather.isRainy } : { status: 'unavailable' });
 
               const weatherNote = buildWeatherNote(weather);
               const introContextAlt = `Alternative route: ${altResolved.origin} to ${altResolved.destination}. ${weatherNote}`.trim();
 
               const intro = await callGemini(NARRATION_PROMPT, introContextAlt, triageHistory)
                 .catch(() => `Here's another option for you!`);
-              sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(altJson)}`, pipelineLog });
+              sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(altJson)}` });
               return;
             }
           }
         }
-        sendJson(res, 200, { type:'chat', text: `Sorry, wala na akong ibang route options para sa route na yon. Subukan mo mag-specify ng ibang area!`, pipelineLog });
+        sendJson(res, 200, { type:'chat', text: `Sorry, wala na akong ibang route options para sa route na yon. Subukan mo mag-specify ng ibang area!` });
         return;
       }
 
@@ -861,13 +846,12 @@ const server = http.createServer(async (req, res) => {
       const routeReadyMatch = triageReply.match(/ROUTE_READY:\s*origin="([^"]+)"\s*destination="([^"]+)"/i);
 
       if (!routeReadyMatch) {
-        sendJson(res, 200, { type:'chat', text: triageReply, pipelineLog });
+        sendJson(res, 200, { type:'chat', text: triageReply });
         return;
       }
 
       const extractedOrigin = routeReadyMatch[1].trim();
       const extractedDest   = routeReadyMatch[2].trim();
-      log('extracted', { origin: extractedOrigin, destination: extractedDest });
 
       const fullContext = [...history.map(m => m.text||''), message].join(' ');
       const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
@@ -875,7 +859,6 @@ const server = http.createServer(async (req, res) => {
       const isPeak  = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
 
       const resolved = resolveLocations(extractedOrigin, extractedDest);
-      log('resolve', { origin: resolved.origin, destination: resolved.destination });
 
       const paths = listPaths(resolved);
       log('paths', paths.map(p => p.description));
@@ -886,21 +869,18 @@ const server = http.createServer(async (req, res) => {
            Tell the user briefly and suggest they rephrase using simpler area names. Be short and friendly.`,
           `No route: ${resolved.origin} → ${resolved.destination}`, triageHistory
         ).catch(() => `Hindi ko mahanap ang route between ${resolved.origin} and ${resolved.destination}. Try mo ulit with a nearby landmark!`);
-        sendJson(res, 200, { type:'chat', text: reply, pipelineLog });
+        sendJson(res, 200, { type:'chat', text: reply });
         return;
       }
 
       const readPaths = paths.map(p => readPath(p, isPeak));
       log('fares', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
 
-      const context = getContext(readPaths, budget, mode);
-      log('ranked', { recommended: context.recommended?.id, budgetWarning: context.budgetWarning });
+      const context = getContext(readPaths, budget);
 
       const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
-      log('route_json', routeJson);
 
       const weather = await getWeather(resolved.destination);
-      log('weather', weather ? { city: weather.city, description: weather.description, temp: weather.temp, isRainy: weather.isRainy } : { status: 'unavailable' });
 
       const weatherNote = buildWeatherNote(weather);
       const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning || ''} ${weatherNote}`.trim();
@@ -910,9 +890,7 @@ const server = http.createServer(async (req, res) => {
 
       sendJson(res, 200, {
         type: 'route',
-        text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`,
-        pipelineLog
-      });
+        text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}` });
 
     } catch(e) {
       sendJson(res, 500, { error: e.message||'Server error' });
