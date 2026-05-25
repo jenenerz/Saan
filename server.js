@@ -126,6 +126,173 @@ const DB = {
   ]
 };
 
+// ── OPENWEATHERMAP ────────────────────────────────
+const WEATHER_CITY_MAP = {
+  "Paranaque":   "Paranaque City",
+  "Las Pinas":   "Las Pinas",
+  "Alabang":     "Muntinlupa",
+  "Bicutan":     "Paranaque City",
+  "Baclaran":    "Pasay",
+  "Pasay":       "Pasay",
+  "MOA":         "Pasay",
+  "PITX":        "Paranaque City",
+  "NAIA":        "Pasay",
+  "Makati":      "Makati",
+  "Buendia":     "Makati",
+  "Guadalupe":   "Makati",
+  "BGC":         "Taguig",
+  "Ortigas":     "Pasig",
+  "Mandaluyong": "Mandaluyong",
+  "San Juan":    "San Juan",
+  "Quiapo":      "Manila",
+  "Manila":      "Manila",
+  "Monumento":   "Caloocan",
+  "SM North":    "Quezon City",
+  "Quezon City": "Quezon City",
+  "Novaliches":  "Quezon City",
+  "Cubao":       "Quezon City",
+  "Marikina":    "Marikina",
+  "Antipolo":    "Antipolo",
+  "Katipunan":   "Quezon City",
+};
+
+// ── CURRENT WEATHER ───────────────────────────────
+function getWeather(areaName) {
+  return new Promise((resolve) => {
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+    if (!apiKey) { resolve(null); return; }
+
+    const city = WEATHER_CITY_MAP[areaName] || areaName;
+    const urlPath = `/data/2.5/weather?q=${encodeURIComponent(city + ',PH')}&appid=${apiKey}&units=metric`;
+
+    const req = https.request({
+      hostname: 'api.openweathermap.org',
+      path: urlPath,
+      method: 'GET'
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.weather && json.main) {
+            resolve({
+              description: json.weather[0].description,
+              main:        json.weather[0].main,
+              temp:        Math.round(json.main.temp),
+              feels_like:  Math.round(json.main.feels_like),
+              humidity:    json.main.humidity,
+              isRainy:     /rain|thunder|drizzle/i.test(json.weather[0].main),
+              city
+            });
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+
+    req.setTimeout(5000, () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+// ── FORECAST WEATHER ──────────────────────────────
+// targetHour: 0-23 (local PH time). If null, returns the next available slot.
+function getWeatherForecast(areaName, targetHour) {
+  return new Promise((resolve) => {
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+    if (!apiKey) { resolve(null); return; }
+
+    const city = WEATHER_CITY_MAP[areaName] || areaName;
+    const urlPath = `/data/2.5/forecast?q=${encodeURIComponent(city + ',PH')}&appid=${apiKey}&units=metric&cnt=16`;
+
+    const req = https.request({
+      hostname: 'api.openweathermap.org',
+      path: urlPath,
+      method: 'GET'
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (!json.list || json.list.length === 0) { resolve(null); return; }
+
+          // Each slot is a 3-hour window. Find the best match for targetHour (PH = UTC+8).
+          let bestSlot = null;
+          if (targetHour !== null && targetHour !== undefined) {
+            let minDiff = Infinity;
+            for (const slot of json.list) {
+              const slotDate = new Date((slot.dt + 8 * 3600) * 1000); // shift to PH time
+              const slotHour = slotDate.getUTCHours();
+              const diff = Math.abs(slotHour - targetHour);
+              if (diff < minDiff) {
+                minDiff = diff;
+                bestSlot = slot;
+              }
+            }
+          } else {
+            bestSlot = json.list[0]; // next available slot
+          }
+
+          if (!bestSlot) { resolve(null); return; }
+
+          // Format the PH local time for display
+          const slotDate = new Date((bestSlot.dt + 8 * 3600) * 1000);
+          const displayHour = slotDate.getUTCHours();
+          const ampm = displayHour >= 12 ? 'PM' : 'AM';
+          const h12 = displayHour % 12 || 12;
+          const displayTime = `${h12}:00 ${ampm}`;
+
+          resolve({
+            description: bestSlot.weather[0].description,
+            main:        bestSlot.weather[0].main,
+            temp:        Math.round(bestSlot.main.temp),
+            feels_like:  Math.round(bestSlot.main.feels_like),
+            humidity:    bestSlot.main.humidity,
+            isRainy:     /rain|thunder|drizzle/i.test(bestSlot.weather[0].main),
+            displayTime,
+            city
+          });
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+
+    req.setTimeout(5000, () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+// ── PARSE TARGET HOUR FROM USER MESSAGE ───────────
+// Returns 0-23 or null if no time found.
+function parseTargetHour(text) {
+  const lower = text.toLowerCase();
+  // Match patterns like "6pm", "6:00pm", "6 pm", "18:00", "6am", "3:30pm"
+  const match = lower.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/) ||
+                lower.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if (!match) return null;
+
+  if (match[3]) {
+    // 12-hour format
+    let hour = parseInt(match[1]);
+    const isPm = match[3] === 'pm';
+    if (isPm && hour !== 12) hour += 12;
+    if (!isPm && hour === 12) hour = 0;
+    return hour;
+  } else if (match[2]) {
+    // 24-hour format (HH:MM)
+    return parseInt(match[1]);
+  }
+  return null;
+}
+
 // ── STAGE 1: resolve_locations ────────────────────
 function resolveLocations(originRaw, destinationRaw) {
   const normalize = (input) => {
@@ -334,8 +501,6 @@ function readPath(p, isPeak) {
     return {...s, fare, min, label, detail};
   });
 
-  // FIX 2: Remove nonsense segments where from === to
-  // This prevents "Jeepney: Ortigas → Ortigas" when destination hub === destination name
   const filteredSegs = segs.filter(s => !s.from || !s.to || s.from !== s.to);
 
   return {...p, segments:filteredSegs,
@@ -398,7 +563,6 @@ function buildRouteJson(context, origin, destination) {
     totalFare: rec.totalFare,
     totalMin: rec.totalMin,
     steps: rec.segments.map(s => ({
-      // FIX 1: correct type mapping — jeepney → 'jeep', walk → 'walk'
       type: s.mode==='MRT-3'   ? 'mrt'  :
             s.mode==='LRT-1' || s.mode==='LRT-2' ? 'lrt' :
             s.mode==='p2p'   ? 'bus'  :
@@ -472,6 +636,7 @@ function callGemini(systemPrompt, userMessage, history) {
 const NARRATION_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
 The route has already been computed. Write ONLY a warm introduction for it.
 Write ONE sentence in English, then repeat the same idea in ONE sentence in Filipino/Tagalog.
+If weather data is provided and it mentions rain, thunder, or drizzle, naturally mention bringing an umbrella.
 Do NOT output JSON, numbers, or any route data. Just the two sentences — nothing else.
 Example:
 "Found a good route for you — this combo gets you there without breaking the bank!
@@ -485,17 +650,29 @@ Follow-up phrases include: "more options", "other options", "alternative", "anot
 "cheaper", "faster", "less transfers", "ibang route", "may iba pa", "alternatives".
 If yes, output ONLY: SHOW_ALTERNATIVES
 
-STEP 2 — Check if the user wants a brand-new route (different origin/destination).
+STEP 2 — Check if the user is asking about weather for a specific location and time.
+Weather question examples: "will it rain in MOA at 6pm?", "papatak ba ulan sa BGC mamaya?",
+"what's the weather like in Makati tonight?", "is it going to rain?".
+If yes, output ONLY: WEATHER_QUERY: location="X" time="6pm"
+Use "now" for time if no specific time is mentioned.
+
+STEP 3 — Check if the user wants a brand-new route (different origin/destination).
 If yes, extract origin and destination and output ONLY:
 ROUTE_READY: origin="X" destination="Y"
 
-STEP 3 — If you cannot determine origin or destination, ask ONE short question. No bullets. Max 1 sentence.
+STEP 4 — If you cannot determine origin or destination, ask ONE short question. No bullets. Max 1 sentence.
 
 Known Manila landmarks:
 - "One Ayala", "Ayala Center", "Glorietta", "Greenbelt" = Makati
 - "MOA", "Mall of Asia", "SM MOA" = MOA
 - "BGC", "Bonifacio", "Fort" = BGC
 - "DLSU", "Taft Ave", "Vito Cruz" = Taft area`;
+
+const WEATHER_ANSWER_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
+You have been given a weather forecast result. Write a short, friendly answer about the weather.
+Write ONE sentence in English, then ONE sentence in Filipino/Tagalog.
+If it is rainy, naturally suggest bringing an umbrella or raincoat.
+Do NOT output JSON or route data. Just the two friendly sentences.`;
 
 // ── HELPERS ───────────────────────────────────────
 function readBody(req) {
@@ -513,6 +690,12 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+// ── BUILD WEATHER NOTE (shared helper) ────────────
+function buildWeatherNote(weather) {
+  if (!weather) return '';
+  return `Weather at destination: ${weather.description}, ${weather.temp}°C, humidity ${weather.humidity}%.${weather.isRainy ? ' IT IS CURRENTLY RAINING.' : ''}`;
+}
+
 // ── SERVER ────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin','*');
@@ -525,9 +708,7 @@ const server = http.createServer(async (req, res) => {
       const pipelineLog = [];
       const log = (stage, data) => pipelineLog.push({ stage, data });
 
-      // FIX 3: Fast path only fires on the FIRST message (no history).
-      // Follow-up questions like "are there other options?" must go through triage
-      // so Gemini can read context and decide what to do — not re-run the same route.
+      // Fast path only fires on the FIRST message (no history).
       const quickParse = history.length === 0 ? parseUserInput(message) : { origin: null, destination: null };
 
       if (quickParse.origin && quickParse.destination) {
@@ -535,15 +716,22 @@ const server = http.createServer(async (req, res) => {
         const resolved = resolveLocations(quickParse.origin, quickParse.destination);
         const paths = listPaths(resolved);
         if (paths.length > 0) {
-          const fullContext = message;
-          const budgetMatch = fullContext.match(/[₱p](\d+)|(\d+)\s*peso/i);
+          const budgetMatch = message.match(/[₱p](\d+)|(\d+)\s*peso/i);
           const budget = budgetMatch ? parseInt(budgetMatch[1]||budgetMatch[2]) : null;
-          const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
+          const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(message.toLowerCase());
           const readPaths = paths.map(p => readPath(p, isPeak));
           const context = getContext(readPaths, budget, mode);
           const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
-          const intro = await callGemini(NARRATION_PROMPT, `Route: ${resolved.origin} to ${resolved.destination}.`, [])
+
+          const weather = await getWeather(resolved.destination);
+          log('weather', weather ? { city: weather.city, description: weather.description, temp: weather.temp, isRainy: weather.isRainy } : { status: 'unavailable' });
+
+          const weatherNote = buildWeatherNote(weather);
+          const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning || ''} ${weatherNote}`.trim();
+
+          const intro = await callGemini(NARRATION_PROMPT, introContext, [])
             .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+
           sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}`, pipelineLog });
           return;
         }
@@ -570,8 +758,7 @@ const server = http.createServer(async (req, res) => {
         triageHistory.shift();
       }
 
-      // ── PRE-CHECK: detect follow-up intent WITHOUT calling Gemini ──
-      // This prevents Gemini from ignoring the intent and re-running the route.
+      // Pre-check: detect follow-up intent WITHOUT calling Gemini
       const isFollowUpIntent = /more options?|other options?|alternative|another (way|route|option)|cheaper|fastest|less transfer|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(message);
 
       let triageReply = null;
@@ -600,10 +787,43 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
-      // Handle follow-up: "more options", "alternatives", etc.
+      // ── Handle WEATHER_QUERY ──
+      const weatherQueryMatch = triageReply.match(/WEATHER_QUERY:\s*location="([^"]+)"\s*time="([^"]+)"/i);
+      if (weatherQueryMatch) {
+        const weatherLocation = weatherQueryMatch[1].trim();
+        const weatherTimeStr  = weatherQueryMatch[2].trim();
+        log('weather_query', { location: weatherLocation, time: weatherTimeStr });
+
+        // Resolve the location using the existing alias system
+        const resolvedLocation = resolveLocations(weatherLocation, weatherLocation).origin;
+
+        let forecastResult = null;
+        if (weatherTimeStr.toLowerCase() === 'now') {
+          forecastResult = await getWeather(resolvedLocation);
+          if (forecastResult) forecastResult.displayTime = 'now';
+        } else {
+          const targetHour = parseTargetHour(weatherTimeStr);
+          forecastResult = await getWeatherForecast(resolvedLocation, targetHour);
+        }
+
+        log('forecast', forecastResult ? { city: forecastResult.city, description: forecastResult.description, temp: forecastResult.temp, isRainy: forecastResult.isRainy, displayTime: forecastResult.displayTime } : { status: 'unavailable' });
+
+        if (!forecastResult) {
+          sendJson(res, 200, { type:'chat', text: `Sorry, hindi ko makuha ang weather data para sa ${resolvedLocation} ngayon. Try again later!`, pipelineLog });
+          return;
+        }
+
+        const forecastContext = `Location: ${resolvedLocation}. Time: ${forecastResult.displayTime}. Weather: ${forecastResult.description}, ${forecastResult.temp}°C, humidity ${forecastResult.humidity}%.${forecastResult.isRainy ? ' IT IS RAINY.' : ''}`;
+
+        const weatherAnswer = await callGemini(WEATHER_ANSWER_PROMPT, forecastContext, triageHistory)
+          .catch(() => `At ${forecastResult.displayTime} in ${resolvedLocation}: ${forecastResult.description}, ${forecastResult.temp}°C.${forecastResult.isRainy ? ' Magdala ng payong!' : ''}`);
+
+        sendJson(res, 200, { type:'chat', text: weatherAnswer.trim(), pipelineLog });
+        return;
+      }
+
+      // ── Handle SHOW_ALTERNATIVES ──
       if (/SHOW_ALTERNATIVES/i.test(triageReply)) {
-        // Extract origin/dest from the route card title in history (e.g. "Paranaque → Cubao")
-        // Search all history messages for the arrow pattern used in route titles
         const historyText = [...history].map(m => m.text||m.parts?.[0]?.text||'').join('\n');
         const prevRoute = historyText.match(/([\w\s]+?)\s*→\s*([\w\s]+?)(?:\n|\\n|$)/m);
 
@@ -614,25 +834,30 @@ const server = http.createServer(async (req, res) => {
             const fullContext = [...history.map(m => m.text||''), message].join(' ');
             const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
             const readPaths = altPaths.map(p => readPath(p, isPeak));
-            // Sort all by fare and skip the first (already shown), show the rest
             const sorted = [...readPaths].sort((a,b) => a.totalFare - b.totalFare);
             const alts = sorted.slice(1);
             if (alts.length > 0) {
               const altContext = getContext(alts, null, mode);
               const altJson = buildRouteJson(altContext, altResolved.origin, altResolved.destination);
-              const intro = await callGemini(NARRATION_PROMPT,
-                `Alternative route: ${altResolved.origin} to ${altResolved.destination}.`, triageHistory)
+
+              const weather = await getWeather(altResolved.destination);
+              log('weather', weather ? { city: weather.city, description: weather.description, temp: weather.temp, isRainy: weather.isRainy } : { status: 'unavailable' });
+
+              const weatherNote = buildWeatherNote(weather);
+              const introContextAlt = `Alternative route: ${altResolved.origin} to ${altResolved.destination}. ${weatherNote}`.trim();
+
+              const intro = await callGemini(NARRATION_PROMPT, introContextAlt, triageHistory)
                 .catch(() => `Here's another option for you!`);
               sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(altJson)}`, pipelineLog });
               return;
             }
           }
         }
-        // No alternatives found
         sendJson(res, 200, { type:'chat', text: `Sorry, wala na akong ibang route options para sa route na yon. Subukan mo mag-specify ng ibang area!`, pipelineLog });
         return;
       }
 
+      // ── Handle ROUTE_READY ──
       const routeReadyMatch = triageReply.match(/ROUTE_READY:\s*origin="([^"]+)"\s*destination="([^"]+)"/i);
 
       if (!routeReadyMatch) {
@@ -674,7 +899,12 @@ const server = http.createServer(async (req, res) => {
       const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
       log('route_json', routeJson);
 
-      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning||''}`;
+      const weather = await getWeather(resolved.destination);
+      log('weather', weather ? { city: weather.city, description: weather.description, temp: weather.temp, isRainy: weather.isRainy } : { status: 'unavailable' });
+
+      const weatherNote = buildWeatherNote(weather);
+      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${context.budgetWarning || ''} ${weatherNote}`.trim();
+
       const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
         .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
 
@@ -704,5 +934,6 @@ const server = http.createServer(async (req, res) => {
 const PORT = process.env.PORT||3000;
 server.listen(PORT, () => {
   console.log(`\n  SakayAI running → http://localhost:${PORT}\n`);
-  if (!process.env.GEMINI_API_KEY) console.warn('  ⚠  GEMINI_API_KEY not set in .env!\n');
+  if (!process.env.GEMINI_API_KEY)      console.warn('  ⚠  GEMINI_API_KEY not set in .env!\n');
+  if (!process.env.OPENWEATHER_API_KEY) console.warn('  ⚠  OPENWEATHER_API_KEY not set in .env (weather disabled)\n');
 });
