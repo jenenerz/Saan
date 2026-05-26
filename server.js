@@ -21,7 +21,7 @@ const DB = {
     "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
     "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
     "makati":"Makati","ayala":"Makati","ayala center":"Makati","sm makati":"Makati","comembo":"Makati","pembo":"Makati","glorietta":"Makati","greenbelt":"Makati",
-    "one ayala":"Makati","buendia":"Buendia","gil puyat":"Buendia",
+    "one ayala":"Makati","one ayala terminal":"Makati","buendia":"Buendia","gil puyat":"Buendia",
     "bgc":"BGC","bonifacio":"BGC","bonifacio global city":"BGC","taguig":"BGC","fort":"BGC",
     "market market":"BGC","uptown bgc":"BGC","uptown mall":"BGC",
     "guadalupe":"Guadalupe",
@@ -114,6 +114,23 @@ const DB = {
     { from:"Antipolo",    to:"Cubao",      service:"Cogeo - Cubao via Marcos Highway",            fare:28 },
     { from:"Antipolo",    to:"Ortigas",    service:"Antipolo - SM Megamall",                      fare:29 },
     { from:"Antipolo",    to:"Makati",     service:"Antipolo - Ayala",                            fare:40 }
+  ],
+
+  // One Ayala Terminal routes transcribed from the Sakay.ph terminal guide
+  // supplied with this project update. Fare and trip duration are not listed
+  // in the supplied tables, so this data stores schedule and stops only.
+  oneAyala: [
+    { to:"PITX",       mode:"ayala_bus", service:"EDSA Carousel (Southbound)", schedule:"24 hours",                  stops:"Pasay Rotonda, Pasay Taft, Baclaran, Heritage, MOA, PITX" },
+    { to:"Alabang",    mode:"ayala_bus", service:"Alabang City Bus",           schedule:"5:00 AM to 12:00 MN",     stops:"SM Bicutan, Loyola Memorial Park, Starmall Alabang" },
+    { to:"Paranaque",  mode:"ayala_bus", service:"Sucat City Bus",             schedule:"5:00 AM to 12:00 MN",     stops:"SM Bicutan, Loyola Memorial Park, Starmall Alabang" },
+    { to:"Bicutan",    mode:"ayala_bus", service:"Bicutan City Bus",           schedule:"5:00 AM to 12:00 MN",     stops:"SM Bicutan, Loyola Memorial Park, Starmall Alabang", landmarks:["SM Bicutan"] },
+    { to:"Antipolo",   mode:"ayala_p2p", service:"Antipolo P2P",              schedule:"Monday to Friday, 7:00 AM to 7:30 PM", stops:"Town & Country, Robinson Antipolo, Tropical, Santolan, Filinvest, Masinag, Feliz" },
+    { to:"Las Pinas",  mode:"ayala_p2p", service:"Las Pinas P2P",             schedule:"Monday to Friday, 6:50 AM to 10:00 PM", stops:"Pilar, Robinson" },
+    { to:"Antipolo",   mode:"ayala_uv",  service:"Antipolo UV Express - Gate 6", schedule:"Monday to Saturday, 3:00 PM to 10:00 PM; Sunday, 5:00 PM to 7:00 PM", stops:"Kalayaan, Buting, IPI, Rosario, Tikling, Antipolo Terminal" },
+    { to:"Paranaque",  mode:"ayala_uv",  service:"Sucat Evacom-Paranaque UV Express - Gate 7", schedule:"Monday to Saturday, 3:00 PM to 10:00 PM", stops:"Valley 1 & 2, Evacom, Lopez, Green Heights, SM BF", landmarks:["SM BF Homes"] },
+    { to:"Paranaque",  mode:"ayala_uv",  service:"BF El Grande-Paranaque UV Express - Gate 7", schedule:"Monday to Saturday, 3:00 PM to 10:00 PM", stops:"SM BF, Baliwan, Green Heights, Lopez, BF Subdivision", landmarks:["SM BF Homes"] },
+    { to:"Las Pinas",  mode:"ayala_uv",  service:"BF Resort-Las Pinas UV Express", schedule:"Monday to Saturday, 4:00 PM to 9:00 PM; one to two trips every Saturday", stops:"Zapote, RFC, SM Center, Casimiro, Moonwalk" },
+    { to:"Bicutan",    mode:"ayala_uv",  service:"Bicutan UV Express - Gate 9", schedule:"Monday to Saturday, 3:00 PM to 10:00 PM; Sunday, 5:00 PM to 7:00 PM", stops:"SM Bicutan, Russia Moonwalk, Russia Village Gate 1 & Gate 2, McDonald's Moonwalk", landmarks:["SM Bicutan"] }
   ],
 
   p2p: [
@@ -333,6 +350,7 @@ function resolveLocations(originRaw, destinationRaw) {
   };
   const displayName = (input, resolved) => {
     const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
+    if (['one ayala', 'one ayala terminal'].includes(clean)) return 'One Ayala Terminal';
     if (['sm bicutan', 'sm bicutan terminal'].includes(clean)) return 'SM Bicutan';
     if (['bf homes', 'sm bf', 'sm bf homes'].includes(clean)) return 'SM BF Homes';
     return resolved;
@@ -362,6 +380,34 @@ function listPaths(resolved) {
     );
 
   // ── P2P bus routes (bidirectional, single best match) ──
+  if (originDisplay === 'One Ayala Terminal') {
+    const services = DB.oneAyala.filter(service => service.to === destination);
+    const landmarkServices = destinationDisplay !== destination
+      ? services.filter(service => (service.landmarks || []).includes(destinationDisplay))
+      : services;
+    const matchingServices = landmarkServices.length ? landmarkServices : services;
+
+    matchingServices.forEach((service, index) => {
+      paths.push({
+        id:`ONE_AYALA_${index}`, type:'one_ayala_terminal',
+        description:`${service.service}: One Ayala Terminal -> ${destinationDisplay}`,
+        segments:[{
+          mode: service.mode,
+          from:'One Ayala Terminal',
+          to: destinationDisplay,
+          service: service.service,
+          schedule: service.schedule,
+          stops: service.stops
+        }],
+        transfers:0
+      });
+    });
+  }
+
+  if (originDisplay === 'One Ayala Terminal' && paths.length > 0) {
+    return paths;
+  }
+
   // Direct UV Express routes use listed terminal-to-terminal fares only.
   // No duration is assigned because the supplied sources do not publish one here.
   const uvMatch = DB.uvExpress.find(r =>
@@ -562,6 +608,11 @@ function readPath(p, isPeak) {
       min=null;
       label=`UV Express: ${s.service}`;
       detail=`Terminal route for ${s.from} to ${s.to} | Listed fare: PHP ${fare} (Nov. 2020 reference; verify current fare before riding) | No travel-time estimate stored`;
+    } else if (s.mode==='ayala_bus' || s.mode==='ayala_p2p' || s.mode==='ayala_uv') {
+      fare=null;
+      min=null;
+      label=`${s.service}: ${s.from} -> ${s.to}`;
+      detail=`Schedule: ${s.schedule} | Stops: ${s.stops} | Fare and travel time not stored; verify at One Ayala Terminal`;
     } else if (s.mode==='p2p') {
       fare=s.fare||0;
       min=Math.ceil((s.min||40)*(isPeak?1.3:1));
@@ -574,7 +625,7 @@ function readPath(p, isPeak) {
   const filteredSegs = segs.filter(s => !s.from || !s.to || s.from !== s.to);
 
   return {...p, segments:filteredSegs,
-    totalFare: filteredSegs.reduce((a,s)=>a+s.fare,0),
+    totalFare: filteredSegs.some(s => s.fare === null) ? null : filteredSegs.reduce((a,s)=>a+s.fare,0),
     totalMin:  filteredSegs.some(s => s.min === null) ? null : filteredSegs.reduce((a,s)=>a+s.min,0),
     isPeak};
 }
@@ -625,7 +676,8 @@ function buildRouteJson(context, origin, destination) {
     steps: rec.segments.map(s => ({
       type: s.mode==='MRT-3'   ? 'mrt'  :
             s.mode==='LRT-1' || s.mode==='LRT-2' ? 'lrt' :
-            s.mode==='uv'    ? 'uv'   :
+            s.mode==='uv' || s.mode==='ayala_uv' ? 'uv' :
+            s.mode==='ayala_bus' || s.mode==='ayala_p2p' ? 'bus' :
             s.mode==='p2p'   ? 'bus'  :
             s.mode==='jeepney' ? 'jeep' :
             s.mode==='walk'  ? 'walk' : 'walk',
