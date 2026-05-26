@@ -167,8 +167,15 @@ body {
 .fare-dot.lrt1 { background: var(--sun-yellow); }
 .fare-dot.lrt2 { background: #9C57FF; }
 .fare-dot.jeep { background: var(--jeep-red); }
+.fare-dot.uv   { background: var(--route-teal); }
 .fare-name { flex: 1; font-size: 11px; color: rgba(255,255,255,0.82); }
 .fare-price { font-size: 11.5px; font-weight: 700; color: var(--sun-yellow); }
+.fare-note {
+  padding-top: 9px;
+  font-size: 9px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.57);
+}
 
 /* JEEPNEY */
 .jeepney-wrap {
@@ -484,6 +491,7 @@ body {
 .step-badge.lrt  { background: #FFF7A8; color: #7A5A00; border: 1px solid #7A5A00; }
 .step-badge.jeep { background: #FFE2DE; color: #9B2C11; border: 1px solid #9B2C11; }
 .step-badge.bus  { background: #E8EEFF; color: #143F99; border: 1px solid #143F99; }
+.step-badge.uv   { background: #E6F6F1; color: #11644F; border: 1px solid #11644F; }
 .step-badge.walk { background: #F5F5F5; color: #444; border: 1px solid #777; }
 
 .step-lbl { font-size: 12.5px; font-weight: 700; color: #111; line-height: 1.3; }
@@ -702,7 +710,7 @@ body {
 
       <div class="sub-tag">Transit PH — Metro Manila</div>
 
-      <div class="fares-label">Live Fares</div>
+      <div class="fares-label">Fare Guide</div>
 
       <div class="fare-row">
         <div class="fare-dot mrt"></div>
@@ -719,11 +727,17 @@ body {
         <div class="fare-name">LRT-2 · 11 stops</div>
         <div class="fare-price">₱12–24</div>
       </div>
-      <div class="fare-row" style="border-bottom:none">
+      <div class="fare-row">
         <div class="fare-dot jeep"></div>
         <div class="fare-name">Jeep · All NCR</div>
         <div class="fare-price">₱13+</div>
       </div>
+      <div class="fare-row" style="border-bottom:none">
+        <div class="fare-dot uv"></div>
+        <div class="fare-name">UV Express · listed routes*</div>
+        <div class="fare-price">₱6–80</div>
+      </div>
+      <div class="fare-note">* UV fares vary by route; upper range reflects observed non-discount fare. Verify current fare at the terminal.</div>
 
       <!-- JEEPNEY SVG -->
       <div class="jeepney-wrap">
@@ -941,12 +955,12 @@ function renderReply(text) {
   addBotMsg('<p>' + md(text) + '</p>');
 }
 
-const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', walk:'WALK', p2p:'P2P' };
+const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', uv:'UV', walk:'WALK', p2p:'P2P' };
 
 function buildCard(d) {
   const steps = (d.steps||[]).map((s, i) => {
     const t = (s.type||'walk').toLowerCase().replace(/[^a-z]/g,'');
-    const cls = ['mrt','lrt','jeep','bus'].includes(t) ? t : 'walk';
+    const cls = ['mrt','lrt','jeep','bus','uv'].includes(t) ? t : 'walk';
     return `<div class="step-row">
       <div class="step-num">${i + 1}</div>
       <div class="step-badge ${cls}">${modeMap[t]||'WALK'}</div>

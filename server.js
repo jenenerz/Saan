@@ -12,15 +12,15 @@ const MIME = {
 const DB = {
   aliases: {
     "paranaque":"Paranaque","parañaque":"Paranaque","para":"Paranaque",
-    "sucat":"Paranaque","bf homes":"Paranaque",
+    "sucat":"Paranaque","bf homes":"Paranaque","sm bf":"Paranaque","sm bf homes":"Paranaque","bf paranaque":"Paranaque","betterliving":"Paranaque",
     "las pinas":"Las Pinas","las piñas":"Las Pinas","laspinas":"Las Pinas",
     "alabang":"Alabang","starmall":"Alabang","muntinlupa":"Alabang","vtx":"Alabang",
-    "bicutan":"Bicutan","ftf":"Bicutan","fti":"Bicutan",
+    "bicutan":"Bicutan","sm bicutan":"Bicutan","sm bicutan terminal":"Bicutan","ftf":"Bicutan","fti":"Bicutan",
     "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
     "pasay":"Pasay","baclaran":"Baclaran","pitx":"PITX",
     "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
     "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
-    "makati":"Makati","ayala":"Makati","glorietta":"Makati","greenbelt":"Makati",
+    "makati":"Makati","ayala":"Makati","ayala center":"Makati","sm makati":"Makati","comembo":"Makati","pembo":"Makati","glorietta":"Makati","greenbelt":"Makati",
     "one ayala":"Makati","buendia":"Buendia","gil puyat":"Buendia",
     "bgc":"BGC","bonifacio":"BGC","bonifacio global city":"BGC","taguig":"BGC","fort":"BGC",
     "market market":"BGC","uptown bgc":"BGC","uptown mall":"BGC",
@@ -35,10 +35,10 @@ const DB = {
     "binondo":"Manila","chinatown":"Manila",
     "monumento":"Monumento","caloocan":"Monumento","balintawak":"Monumento",
     "sm north":"SM North","sm north edsa":"SM North","north edsa":"SM North","trinoma":"SM North",
-    "fairview":"Novaliches","novaliches":"Novaliches","commonwealth":"Novaliches",
+    "fairview":"Novaliches","sm fairview":"Novaliches","lagro":"Novaliches","novaliches":"Novaliches","commonwealth":"Novaliches",
     "qc":"Quezon City","quezon city":"Quezon City","quezon ave":"Quezon City",
     "cubao":"Cubao","araneta":"Cubao","araneta cubao":"Cubao","farmers":"Cubao","gateway":"Cubao",
-    "marikina":"Marikina","santolan":"Marikina",
+    "marikina":"Marikina","sto nino marikina":"Marikina","marikina heights":"Marikina","santolan":"Marikina",
     "antipolo":"Antipolo","cainta":"Antipolo","cogeo":"Antipolo",
     "katipunan":"Katipunan","ateneo":"Katipunan","up":"Katipunan","loyola":"Katipunan",
   },
@@ -90,6 +90,31 @@ const DB = {
     fare:{1:12,2:12,3:13,4:14,5:15,6:16,7:17,8:18,9:20,10:22},
     minPerStop:3
   },
+
+  // UV Express fares are reference values from an LTFRB route list reported on
+  // The Poor Traveler (published Nov. 29, 2020; routes listed as of Nov. 23, 2020).
+  // Moovit also lists UV services in Manila, but its public page does not provide fares.
+  uvExpress: [
+    { from:"Paranaque",   to:"Makati",     service:"BF Paranaque - Ayala Center",                 fare:40 },
+    { from:"Paranaque",   to:"Manila",     service:"Sucat (Paranaque) - Lawton (Park N Ride)",    fare:40 },
+    { from:"Las Pinas",   to:"Quiapo",     service:"SM South Mall - Quiapo",                      fare:57 },
+    { from:"Makati",      to:"Ortigas",    service:"Comembo - SM Megamall",                       fare:11 },
+    { from:"Marikina",    to:"Cubao",      service:"Brgy. Fortune (Marikina City) - Cubao",       fare:21 },
+    { from:"Marikina",    to:"Makati",     service:"Sto. Nino (Marikina) - Ayala",                fare:38 },
+    { from:"Marikina",    to:"Ortigas",    service:"Sto. Nino (Marikina) - Ortigas Center",       fare:24 },
+    { from:"Novaliches",  to:"Quiapo",     service:"Lagro - Quiapo via Sauyo",                    fare:46 },
+    { from:"Novaliches",  to:"Cubao",      service:"Novaliches - Cubao Farmers Market",           fare:37 },
+    { from:"Novaliches",  to:"Monumento",  service:"Novaliches - Monumento",                      fare:24 },
+    { from:"Novaliches",  to:"Buendia",    service:"Robinson's Place Novaliches - Buendia",       fare:55 },
+    { from:"BGC",         to:"Ortigas",    service:"Market Market - Pasig via San Joaquin",       fare:6  },
+    { from:"SM North",    to:"Novaliches", service:"SM North EDSA - SM Fairview",                 fare:30 },
+    { from:"SM North",    to:"Manila",     service:"SM North C.I.T. - T.M. Kalaw",                fare:21 },
+    { from:"Cubao",       to:"Buendia",    service:"Cubao - Buendia",                             fare:28 },
+    { from:"Bicutan",     to:"Makati",     service:"SM Bicutan Terminal - SM Makati",             fare:24 },
+    { from:"Antipolo",    to:"Cubao",      service:"Cogeo - Cubao via Marcos Highway",            fare:28 },
+    { from:"Antipolo",    to:"Ortigas",    service:"Antipolo - SM Megamall",                      fare:29 },
+    { from:"Antipolo",    to:"Makati",     service:"Antipolo - Ayala",                            fare:40 }
+  ],
 
   p2p: [
     { from:"Alabang", to:"BGC",    bus:"HM Worthy",              fare:52, min:45, note:"Via SLEX–C5, TRIPKO card. 6AM–8PM." },
@@ -306,10 +331,18 @@ function resolveLocations(originRaw, destinationRaw) {
     }
     return input.trim().replace(/\b\w/g, c => c.toUpperCase());
   };
+  const displayName = (input, resolved) => {
+    const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
+    if (['sm bicutan', 'sm bicutan terminal'].includes(clean)) return 'SM Bicutan';
+    if (['bf homes', 'sm bf', 'sm bf homes'].includes(clean)) return 'SM BF Homes';
+    return resolved;
+  };
   const origin      = normalize(originRaw);
   const destination = normalize(destinationRaw);
   return {
     originRaw, destinationRaw, origin, destination,
+    originDisplay: displayName(originRaw, origin),
+    destinationDisplay: displayName(destinationRaw, destination),
     originKnown: !!DB.areas[origin],
     destKnown:   !!DB.areas[destination],
     originArea:  DB.areas[origin]      || null,
@@ -319,7 +352,7 @@ function resolveLocations(originRaw, destinationRaw) {
 
 // ── STAGE 2: list_paths ───────────────────────────
 function listPaths(resolved) {
-  const { origin, destination, originArea, destArea } = resolved;
+  const { origin, destination, originArea, destArea, originDisplay = origin, destinationDisplay = destination } = resolved;
   const paths = [];
 
   const stationIdx = (line, hub) =>
@@ -329,6 +362,28 @@ function listPaths(resolved) {
     );
 
   // ── P2P bus routes (bidirectional, single best match) ──
+  // Direct UV Express routes use listed terminal-to-terminal fares only.
+  // No duration is assigned because the supplied sources do not publish one here.
+  const uvMatch = DB.uvExpress.find(r =>
+    (r.from === origin && r.to === destination) ||
+    (r.from === destination && r.to === origin)
+  );
+
+  if (uvMatch) {
+    paths.push({
+      id:'UV_EXPRESS', type:'direct_uv',
+      description:`UV Express (${uvMatch.service}): ${origin} -> ${destination}`,
+      segments:[{
+        mode:'uv',
+        from: originDisplay,
+        to: destinationDisplay,
+        fare: uvMatch.fare,
+        service: uvMatch.service
+      }],
+      transfers:0
+    });
+  }
+
   const findP2P = (a, b) => DB.p2p.find(r =>
     (r.from === a && r.to === b) || (r.from === b && r.to === a)
   );
@@ -344,8 +399,8 @@ function listPaths(resolved) {
       description:`${p2pMatch.bus}: ${origin} → ${destination}`,
       segments:[{
         mode:'p2p',
-        from: origin,
-        to:   destination,
+        from: originDisplay,
+        to:   destinationDisplay,
         fare: p2pMatch.fare,
         min:  p2pMatch.min,
         bus:  p2pMatch.bus,
@@ -359,6 +414,13 @@ function listPaths(resolved) {
   if (!originArea || !destArea) return paths;
   if (originArea.hubLine === 'P2P' || destArea.hubLine === 'P2P') return paths;
 
+  const originAccess = () => originArea.hubMode !== 'origin'
+    ? [{ mode:originArea.hubMode, from:originDisplay, to:originArea.hub, km:originArea.hubKm, min:originArea.hubMin }]
+    : [];
+  const destinationAccess = () => destArea.hubMode !== 'origin'
+    ? [{ mode:destArea.hubMode, from:destArea.hub, to:destinationDisplay, km:destArea.hubKm, min:destArea.hubMin, signboard:destinationDisplay }]
+    : [];
+
   const lines = [{ data:DB.mrt3 },{ data:DB.lrt1 },{ data:DB.lrt2 }];
 
   // ── Same rail line, direct ──
@@ -371,9 +433,9 @@ function listPaths(resolved) {
           id:`${line.name}_DIRECT`, type:'rail_direct',
           description:`${originArea.hubMode!=='origin'?originArea.hubMode+' + ':''}${line.name} direct`,
           segments:[
-            ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+            ...originAccess(),
             {mode:line.name,from:line.stations[oi],to:line.stations[di],stops:Math.abs(di-oi),line:line.name},
-            ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+            ...destinationAccess()
           ],
           transfers:0
         });
@@ -389,11 +451,11 @@ function listPaths(resolved) {
       paths.push({ id:'LRT1_MRT3', type:'rail_transfer',
         description:'LRT-1 → transfer Taft Ave → MRT-3',
         segments:[
-          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          ...originAccess(),
           {mode:'LRT-1',from:DB.lrt1.stations[oi],to:'EDSA',stops:Math.abs(edsa-oi),line:'LRT-1'},
           {mode:'walk',from:'EDSA LRT-1',to:'Taft Avenue MRT-3',min:5,note:'~200m covered walkway'},
           {mode:'MRT-3',from:'Taft Avenue',to:DB.mrt3.stations[di],stops:Math.abs(di-taft),line:'MRT-3'},
-          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+          ...destinationAccess()
         ],
         transfers:1 });
     }
@@ -407,11 +469,11 @@ function listPaths(resolved) {
       paths.push({ id:'MRT3_LRT1', type:'rail_transfer',
         description:'MRT-3 → transfer Taft Ave → LRT-1',
         segments:[
-          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          ...originAccess(),
           {mode:'MRT-3',from:DB.mrt3.stations[oi],to:'Taft Avenue',stops:Math.abs(taft-oi),line:'MRT-3'},
           {mode:'walk',from:'Taft Avenue MRT',to:'Baclaran LRT-1',min:5,note:'~200m covered walkway'},
           {mode:'LRT-1',from:'Baclaran',to:DB.lrt1.stations[di],stops:Math.abs(di-bac),line:'LRT-1'},
-          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+          ...destinationAccess()
         ],
         transfers:1 });
     }
@@ -425,11 +487,11 @@ function listPaths(resolved) {
       paths.push({ id:'MRT3_LRT2', type:'rail_transfer',
         description:'MRT-3 → transfer Cubao → LRT-2',
         segments:[
-          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          ...originAccess(),
           {mode:'MRT-3',from:DB.mrt3.stations[oi],to:'Araneta-Cubao',stops:Math.abs(c3-oi),line:'MRT-3'},
           {mode:'walk',from:'Araneta-Cubao MRT',to:'Araneta-Cubao LRT-2',min:3,note:'Direct interchange'},
           {mode:'LRT-2',from:'Araneta-Cubao',to:DB.lrt2.stations[di],stops:Math.abs(di-c2),line:'LRT-2'},
-          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+          ...destinationAccess()
         ],
         transfers:1 });
     }
@@ -443,11 +505,11 @@ function listPaths(resolved) {
       paths.push({ id:'LRT2_MRT3', type:'rail_transfer',
         description:'LRT-2 → transfer Cubao → MRT-3',
         segments:[
-          ...(originArea.hubMode!=='origin'?[{mode:originArea.hubMode,from:origin,to:originArea.hub,km:originArea.hubKm,min:originArea.hubMin}]:[]),
+          ...originAccess(),
           {mode:'LRT-2',from:DB.lrt2.stations[oi],to:'Araneta-Cubao',stops:Math.abs(c2-oi),line:'LRT-2'},
           {mode:'walk',from:'Araneta-Cubao LRT-2',to:'Araneta-Cubao MRT-3',min:3,note:'Direct interchange'},
           {mode:'MRT-3',from:'Araneta-Cubao',to:DB.mrt3.stations[di],stops:Math.abs(di-c3),line:'MRT-3'},
-          ...(destArea.hubMode!=='origin'?[{mode:destArea.hubMode,from:destArea.hub,to:destination,km:destArea.hubKm,min:destArea.hubMin}]:[])
+          ...destinationAccess()
         ],
         transfers:1 });
     }
@@ -488,10 +550,18 @@ function readPath(p, isPeak) {
       min=Math.ceil((s.min||20)*pm);
       label=`Jeepney: ${s.from} → ${s.to}`;
       detail=`Ride jeepney from ${s.from} going to ${s.to} · ~${km}km · Flag down along the route${isPeak?' · Heavy traffic expected':''}`;
+      if (s.signboard) {
+        detail=`From ${s.from}, look for a jeepney with the "${s.signboard}" signboard and alight at ${s.signboard} (~${km} km)${isPeak?' - Heavy traffic expected':''}`;
+      }
     } else if (s.mode==='walk') {
       fare=0; min=s.min||5;
       label=`Walk: ${s.from} → ${s.to}`;
       detail=s.note||`Walk from ${s.from} to ${s.to}`;
+    } else if (s.mode==='uv') {
+      fare=s.fare||0;
+      min=null;
+      label=`UV Express: ${s.service}`;
+      detail=`Terminal route for ${s.from} to ${s.to} | Listed fare: PHP ${fare} (Nov. 2020 reference; verify current fare before riding) | No travel-time estimate stored`;
     } else if (s.mode==='p2p') {
       fare=s.fare||0;
       min=Math.ceil((s.min||40)*(isPeak?1.3:1));
@@ -505,7 +575,7 @@ function readPath(p, isPeak) {
 
   return {...p, segments:filteredSegs,
     totalFare: filteredSegs.reduce((a,s)=>a+s.fare,0),
-    totalMin:  filteredSegs.reduce((a,s)=>a+s.min,0),
+    totalMin:  filteredSegs.some(s => s.min === null) ? null : filteredSegs.reduce((a,s)=>a+s.min,0),
     isPeak};
 }
 
@@ -555,6 +625,7 @@ function buildRouteJson(context, origin, destination) {
     steps: rec.segments.map(s => ({
       type: s.mode==='MRT-3'   ? 'mrt'  :
             s.mode==='LRT-1' || s.mode==='LRT-2' ? 'lrt' :
+            s.mode==='uv'    ? 'uv'   :
             s.mode==='p2p'   ? 'bus'  :
             s.mode==='jeepney' ? 'jeep' :
             s.mode==='walk'  ? 'walk' : 'walk',
@@ -706,15 +777,15 @@ const server = http.createServer(async (req, res) => {
           const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(message.toLowerCase());
           const readPaths = paths.map(p => readPath(p, isPeak));
           const context = getContext(readPaths);
-          const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
+          const routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
 
           const weather = await getWeather(resolved.destination);
 
           const weatherNote = buildWeatherNote(weather);
-          const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
+          const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
 
           const intro = await callGemini(NARRATION_PROMPT, introContext, [])
-            .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+            .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!`);
 
           sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}` });
           return;
@@ -815,12 +886,12 @@ const server = http.createServer(async (req, res) => {
             const alts = readPaths.slice(1);
             if (alts.length > 0) {
               const altContext = getContext(alts);
-              const altJson = buildRouteJson(altContext, altResolved.origin, altResolved.destination);
+              const altJson = buildRouteJson(altContext, altResolved.originDisplay, altResolved.destinationDisplay);
 
               const weather = await getWeather(altResolved.destination);
 
               const weatherNote = buildWeatherNote(weather);
-              const introContextAlt = `Alternative route: ${altResolved.origin} to ${altResolved.destination}. ${weatherNote}`.trim();
+              const introContextAlt = `Alternative route: ${altResolved.originDisplay} to ${altResolved.destinationDisplay}. ${weatherNote}`.trim();
 
               const intro = await callGemini(NARRATION_PROMPT, introContextAlt, triageHistory)
                 .catch(() => `Here's another option for you!`);
@@ -850,7 +921,7 @@ const server = http.createServer(async (req, res) => {
       const resolved = resolveLocations(extractedOrigin, extractedDest);
 
       const paths = listPaths(resolved);
-      log('paths', paths.map(p => p.description));
+      console.log('ROUTE PATHS:', paths.map(p => p.description));
 
       if (paths.length === 0) {
         const reply = await callGemini(
@@ -863,19 +934,19 @@ const server = http.createServer(async (req, res) => {
       }
 
       const readPaths = paths.map(p => readPath(p, isPeak));
-      log('fares', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
+      console.log('ROUTE DETAILS:', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
 
       const context = getContext(readPaths);
 
-      const routeJson = buildRouteJson(context, resolved.origin, resolved.destination);
+      const routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
 
       const weather = await getWeather(resolved.destination);
 
       const weatherNote = buildWeatherNote(weather);
-      const introContext = `Route: ${resolved.origin} to ${resolved.destination}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
+      const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
 
       const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
-        .catch(() => `Here's your route from ${resolved.origin} to ${resolved.destination}!`);
+        .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!`);
 
       sendJson(res, 200, {
         type: 'route',
@@ -899,6 +970,15 @@ const server = http.createServer(async (req, res) => {
 });
 
 const PORT = process.env.PORT||3000;
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Stop the existing server or set a different PORT in .env.`);
+    process.exitCode = 1;
+    return;
+  }
+  throw error;
+});
+
 server.listen(PORT, () => {
   console.log(`\n  SakayAI running → http://localhost:${PORT}\n`);
   if (!process.env.GEMINI_API_KEY)      console.warn('  ⚠  GEMINI_API_KEY not set in .env!\n');

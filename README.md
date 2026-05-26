@@ -10,7 +10,7 @@ The app has a single-page frontend in `index.html` and a Node.js backend in `ser
 - Example route buttons on the home screen
 - Local route matching for known Metro Manila areas and landmarks
 - Route cards with step-by-step commute instructions
-- Support for MRT-3, LRT-1, LRT-2, jeepney, bus/P2P, and walking steps where available in the local data
+- Support for MRT-3, LRT-1, LRT-2, jeepney, UV Express, bus/P2P, and walking steps where available in the local data
 - Follow-up support for alternative routes
 - Weather answers for supported areas when `OPENWEATHER_API_KEY` is set
 - Philippine-inspired frontend styling in one HTML file
@@ -129,10 +129,13 @@ The server then:
 
 The route data is stored directly in `server.js`, not in a database.
 
+UV Express routes in the current data set use terminal pairs and listed fares reported by The Poor Traveler from an LTFRB list dated November 23, 2020. The app marks these as reference fares because they are not live fare data. Moovit lists UV Express services in Manila, but live schedules and fare updates are not integrated into this project.
+
 ## Known Limitations
 
 - Route coverage is limited to the areas and routes manually listed in `server.js`.
 - Fare and travel time data are hardcoded, so they can become outdated.
+- UV Express fare references are based on a November 2020 route list and should be checked before travel.
 - The app needs `GEMINI_API_KEY` for the full chat experience.
 - Weather depends on OpenWeatherMap and may fail if the API key is missing or the request times out.
 - There is no user login, saved history, or database.
