@@ -22,8 +22,10 @@ const DB = {
     "arca south shuttle loop":"Arca South Shuttle Loop","shuttle loop":"Arca South Shuttle Loop",
     "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
     "pasay":"Pasay","pasay rotonda":"Pasay","rotonda":"Pasay","taft avenue station":"Pasay","mrt 3 taft avenue station":"Pasay","baclaran":"Baclaran","pitx":"PITX",
-    "bacoor":"Bacoor","bacoor cavite":"Bacoor","sm bacoor":"Bacoor",
+    "cavite":"Cavite","bacoor":"Bacoor","bacoor cavite":"Bacoor","sm bacoor":"Bacoor",
     "dasma":"Dasmarinas","dasmarinas":"Dasmarinas","dasmariñas":"Dasmarinas","dasmarias":"Dasmarinas","dasmarinas cavite":"Dasmarinas",
+    "imus":"Imus","imus cavite":"Imus","molino":"Molino","sm molino":"Molino","molino cavite":"Molino",
+    "tagaytay":"Tagaytay","tagaytay cavite":"Tagaytay","trece":"Trece Martires","trece martires":"Trece Martires","trece marites":"Trece Martires",
     "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
     "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
     "makati":"Makati","ayala":"Makati","ayala center":"Makati","sm makati":"Makati","comembo":"Makati","pembo":"Makati","glorietta":"Makati","greenbelt":"Makati",
@@ -58,8 +60,13 @@ const DB = {
     "Pasay":       { hub:"Baclaran",        hubLine:"LRT-1", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "MOA":         { hub:"MOA",             hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "PITX":        { hub:"PITX",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Cavite":      { hub:"Cavite",          hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Bacoor":      { hub:"Bacoor",          hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Dasmarinas":  { hub:"Dasmarinas",      hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Imus":        { hub:"Imus",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Molino":      { hub:"Molino",          hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Tagaytay":    { hub:"Tagaytay",        hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Trece Martires": { hub:"Trece Martires", hubLine:"P2P", hubMin:0, hubKm:0, hubMode:"origin" },
     "NAIA":        { hub:"NAIA",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Arca South":  { hub:"Arca South",      hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "FTI":         { hub:"FTI",             hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
@@ -132,15 +139,65 @@ const DB = {
     { from:"Antipolo",    to:"Makati",     service:"Antipolo - Ayala" }
   ],
 
-  // Cavite route guidance supplied for the project. No fares, schedules, or
-  // durations are stored; riders should confirm signboards and stops onsite.
+  // Cavite route guidance supplied for the project and supported by:
+  // https://ph.commutetour.com/ph/terminal/edsa-taft-pasay-rotonda/
+  // No fares, schedules, or durations are stored; riders should confirm onsite.
   caviteRoutes: [
+    ...["Cavite", "Bacoor", "Imus", "Dasmarinas", "Molino", "Tagaytay", "Trece Martires"].flatMap(destination => [
+      {
+        from:"Bicutan", to:destination, id:`SM_BICUTAN_PITX_${destination.toUpperCase().replace(/\s+/g, '_')}`,
+        segments:[
+          {
+            mode:"guided_jeep",
+            label:"Jeepney: SM Bicutan Terminal to Pasay Rotonda",
+            detail:"Go to the terminal at SM Bicutan and ride a jeepney bound for Pasay. Alight at Pasay Rotonda. / Pumunta sa terminal ng SM Bicutan at sumakay ng jeepney na papuntang Pasay. Bumaba sa Pasay Rotonda."
+          },
+          {
+            mode:"guided_bus",
+            label:"EDSA Carousel: Pasay Rotonda to PITX",
+            detail:"From Pasay Rotonda, proceed to the EDSA Carousel bus stop and ride southbound to PITX. / Mula Pasay Rotonda, pumunta sa sakayan ng EDSA Carousel at sumakay ng southbound bus papuntang PITX."
+          },
+          {
+            mode:"guided_bus",
+            label:`Bus: PITX to ${destination === "Cavite" ? "your Cavite destination" : `${destination}, Cavite`}`,
+            detail:`At PITX, find a bus serving ${destination === "Cavite" ? "your destination in Cavite" : `${destination}, Cavite`}. Confirm the bay, signboard, and current fare before boarding. / Sa PITX, hanapin ang bus na bumibiyahe papuntang ${destination === "Cavite" ? "iyong destinasyon sa Cavite" : `${destination}, Cavite`}. Kumpirmahin ang bay, karatula, at kasalukuyang pamasahe bago sumakay.`
+          }
+        ]
+      },
+      {
+        from:"Bicutan", to:destination, id:`SM_BICUTAN_PASAY_TERMINAL_${destination.toUpperCase().replace(/\s+/g, '_')}`,
+        segments:[
+          {
+            mode:"guided_jeep",
+            label:"Jeepney: SM Bicutan Terminal to Pasay Rotonda",
+            detail:"Go to the terminal at SM Bicutan and ride a jeepney bound for Pasay. Alight at Pasay Rotonda. / Pumunta sa terminal ng SM Bicutan at sumakay ng jeepney na papuntang Pasay. Bumaba sa Pasay Rotonda."
+          },
+          {
+            mode: destination === "Molino" || destination === "Cavite" ? "guided_terminal" : "guided_bus",
+            label: destination === "Molino"
+              ? "Pasay terminal: Van to SM Molino / Paliparan, Cavite"
+              : `Pasay terminal: ${destination === "Cavite" ? "Service" : "Bus"} to ${destination === "Cavite" ? "Cavite" : `${destination}, Cavite`}`,
+            detail: destination === "Molino"
+              ? "At Pasay Rotonda, find the van route serving SM Molino / Paliparan. Confirm the loading point and current fare before boarding. / Sa Pasay Rotonda, hanapin ang van route na bumibiyahe papuntang SM Molino / Paliparan. Kumpirmahin ang sakayan at kasalukuyang pamasahe bago sumakay."
+              : `At Pasay Rotonda, find the terminal service serving ${destination === "Cavite" ? "your Cavite destination, such as Bacoor, Imus, Dasmarinas, Molino, Tagaytay, or Trece Martires" : `${destination}, Cavite`}. Confirm the route and current fare before boarding. / Sa Pasay Rotonda, hanapin ang terminal service na bumibiyahe papuntang ${destination === "Cavite" ? "iyong destinasyon sa Cavite, gaya ng Bacoor, Imus, Dasmarinas, Molino, Tagaytay, o Trece Martires" : `${destination}, Cavite`}. Kumpirmahin ang ruta at kasalukuyang pamasahe bago sumakay.`
+          }
+        ]
+      }
+    ]),
+    {
+      from:"Pasay", to:"Cavite", id:"PASAY_ROTONDA_CAVITE_TERMINAL",
+      segments:[{
+        mode:"guided_terminal",
+        label:"Pasay terminal: Cavite destinations",
+        detail:"At the terminal near MRT-3 Taft Avenue Station in Pasay Rotonda, find the service for your Cavite destination, including SM Bacoor, Imus, Dasmarinas, SM Molino / Paliparan, Tagaytay, or Trece Martires. Confirm the vehicle type, loading point, and current fare before boarding. / Sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda, hanapin ang biyaheng papunta sa iyong destinasyon sa Cavite, kabilang ang SM Bacoor, Imus, Dasmarinas, SM Molino / Paliparan, Tagaytay, o Trece Martires. Kumpirmahin ang uri ng sasakyan, sakayan, at kasalukuyang pamasahe bago sumakay."
+      }]
+    },
     {
       from:"Pasay", to:"Bacoor", id:"PASAY_ROTONDA_BACOOR_BUS",
       segments:[{
         mode:"guided_bus",
         label:"Bus: Pasay Rotonda / Taft Avenue Station to Bacoor, Cavite",
-        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip stops in Bacoor before boarding. / Pumunta sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda at hanapin ang bus na biyaheng Tagaytay. Kumpirmahin muna na dadaan ito sa Bacoor bago sumakay."
+        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and find a bus serving SM Bacoor. Confirm the signboard and current fare before boarding. / Pumunta sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda at hanapin ang bus na bumibiyahe papuntang SM Bacoor. Kumpirmahin ang karatula at kasalukuyang pamasahe bago sumakay."
       }]
     },
     {
@@ -206,9 +263,22 @@ const DB = {
       segments:[{
         mode:"guided_bus",
         label:"Bus: Pasay Rotonda / Taft Avenue Station to Dasmarinas, Cavite",
-        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip serves Dasmarinas before boarding. / Pumunta sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda at hanapin ang bus na biyaheng Tagaytay. Kumpirmahin muna na dadaan ito sa Dasmarinas bago sumakay."
+        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and find a bus serving Dasmarinas. Confirm the signboard and current fare before boarding. / Pumunta sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda at hanapin ang bus na bumibiyahe papuntang Dasmarinas. Kumpirmahin ang karatula at kasalukuyang pamasahe bago sumakay."
       }]
-    }
+    },
+    ...[
+      { to:"Imus", label:"Imus, Cavite", vehicle:"Bus" },
+      { to:"Molino", label:"SM Molino / Paliparan, Cavite", vehicle:"Van" },
+      { to:"Tagaytay", label:"Tagaytay, Cavite", vehicle:"Bus" },
+      { to:"Trece Martires", label:"Trece Martires, Cavite", vehicle:"Bus" }
+    ].map(route => ({
+      from:"Pasay", to:route.to, id:`PASAY_ROTONDA_${route.to.toUpperCase().replace(/\s+/g, '_')}_TERMINAL`,
+      segments:[{
+        mode: route.vehicle === "Van" ? "guided_terminal" : "guided_bus",
+        label:`${route.vehicle}: Pasay Rotonda / Taft Avenue Station to ${route.label}`,
+        detail:`Board at the terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and find the ${route.vehicle.toLowerCase()} service for ${route.label}. Confirm the loading point, signboard, and current fare before boarding. / Pumunta sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda at hanapin ang ${route.vehicle.toLowerCase()} na bumibiyahe papuntang ${route.label}. Kumpirmahin ang sakayan, karatula, at kasalukuyang pamasahe bago sumakay.`
+      }]
+    }))
   ],
 
   // Arca South and FTI terminal guidance supplied for this project update.
@@ -331,6 +401,10 @@ const WEATHER_CITY_MAP = {
   "PITX":        "Paranaque City",
   "Bacoor":      "Bacoor",
   "Dasmarinas":  "Dasmarinas",
+  "Imus":        "Imus",
+  "Molino":      "Bacoor",
+  "Tagaytay":    "Tagaytay",
+  "Trece Martires": "Trece Martires",
   "NAIA":        "Pasay",
   "Arca South":  "Taguig",
   "FTI":         "Taguig",
@@ -586,7 +660,7 @@ function resolveLocations(originRaw, destinationRaw) {
   const destination = normalize(destinationRaw);
   let originDisplay = displayName(originRaw, origin);
   let destinationDisplay = displayName(destinationRaw, destination);
-  if (origin === 'Pasay' && ['Bacoor', 'Dasmarinas'].includes(destination)) {
+  if (origin === 'Pasay' && ['Cavite', 'Bacoor', 'Imus', 'Dasmarinas', 'Molino', 'Tagaytay', 'Trece Martires'].includes(destination)) {
     originDisplay = 'Pasay Rotonda';
   }
   if (origin === 'Arca South' && destination === 'Pasay') {
@@ -594,6 +668,10 @@ function resolveLocations(originRaw, destinationRaw) {
   }
   if (destination === 'Bacoor') destinationDisplay = 'Bacoor, Cavite';
   if (destination === 'Dasmarinas') destinationDisplay = 'Dasmarinas, Cavite';
+  if (destination === 'Imus') destinationDisplay = 'Imus, Cavite';
+  if (destination === 'Molino') destinationDisplay = 'Molino, Cavite';
+  if (destination === 'Tagaytay') destinationDisplay = 'Tagaytay, Cavite';
+  if (destination === 'Trece Martires') destinationDisplay = 'Trece Martires, Cavite';
   return {
     originRaw, destinationRaw, origin, destination,
     originDisplay,
@@ -947,6 +1025,18 @@ function parseUserInput(message) {
 }
 
 // ── BUILD ROUTE JSON ──────────────────────────────
+const ALTERNATIVE_INTENT_RE = /more options?|other options?|alternative|another (way|route|option)|second (way|route|option)|different (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i;
+
+function parseAlternativeTarget(message) {
+  if (!ALTERNATIVE_INTENT_RE.test(message)) return null;
+  const target = message.match(/\b(?:for|from)\s+(.+?)\s+to\s+(.+?)(?:\s*[,.?!]|$)/i);
+  if (!target) return null;
+  return {
+    origin: target[1].trim(),
+    destination: target[2].trim().replace(/\s+(please|pls)$/i, '')
+  };
+}
+
 function buildRouteJson(context, origin, destination) {
   const rec = context.recommended;
   if (!rec) return null;
@@ -1046,7 +1136,7 @@ Read the FULL conversation history carefully.
 
 STEP 1 — Check if the user is asking a follow-up about an already-shown route.
 Follow-up phrases include: "more options", "other options", "alternative", "another way",
-"ibang route", "may iba pa", "alternatives".
+"second option", "ibang route", "may iba pa", "alternatives".
 If yes, output ONLY: SHOW_ALTERNATIVES
 
 STEP 2 — Check if the user is asking about weather for a specific location and time.
@@ -1074,6 +1164,7 @@ Known Manila landmarks:
 - "Pasay", "Pasay Rotonda", "Taft Avenue Station" = Pasay Rotonda for Cavite-bound routes
 - "Bacoor", "SM Bacoor" = Bacoor, Cavite
 - "Dasma", "Dasmarinas" = Dasmarinas, Cavite
+- "Imus", "Molino", "SM Molino", "Tagaytay", "Trece Martires" = Cavite destinations
 - "Arca South", "Arca South Taguig" = Arca South
 - "FTI", "FTI Terminal" = FTI
 - "DLSU", "Taft Ave", "Vito Cruz" = Taft area`;
@@ -1139,7 +1230,11 @@ const server = http.createServer(async (req, res) => {
       const { message, history=[] } = await readBody(req);
 
       // Direct route requests should use stored routes before AI triage, including in ongoing chats.
-      const quickParse = parseUserInput(message);
+      // Alternative requests are handled from history below so named trips can select their second path.
+      const isFollowUpIntent = ALTERNATIVE_INTENT_RE.test(message);
+      const quickParse = isFollowUpIntent
+        ? { origin: null, destination: null }
+        : parseUserInput(message);
 
       if (quickParse.origin && quickParse.destination) {
         const resolved = resolveLocations(quickParse.origin, quickParse.destination);
@@ -1183,9 +1278,6 @@ const server = http.createServer(async (req, res) => {
       if (triageHistory.length > 0 && triageHistory[0].role !== 'user') {
         triageHistory.shift();
       }
-
-      // Pre-check: detect follow-up intent WITHOUT calling Gemini
-      const isFollowUpIntent = /more options?|other options?|alternative|another (way|route|option)|different (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(message);
 
       let triageReply = null;
       let triageError = null;
@@ -1258,9 +1350,19 @@ const server = http.createServer(async (req, res) => {
         const userHistoryMessages = history
           .filter(m => m.role === 'user')
           .map(m => m.text||m.parts?.[0]?.text||'');
-        const previousRequest = [...userHistoryMessages].reverse()
-          .map(text => parseUserInput(text))
-          .find(parsed => parsed.origin && parsed.destination);
+        const requestedTrip = parseAlternativeTarget(message);
+        let previousRequest = requestedTrip;
+        let previousRequestIndex = -1;
+        if (!previousRequest) {
+          for (let index = userHistoryMessages.length - 1; index >= 0; index -= 1) {
+            const parsed = parseUserInput(userHistoryMessages[index]);
+            if (parsed.origin && parsed.destination) {
+              previousRequest = parsed;
+              previousRequestIndex = index;
+              break;
+            }
+          }
+        }
         const historyText = historyMessages.join('\n');
         const prevRoute = historyText.match(/([^\n]+?)\s*→\s*([^\n]+?)(?:\n|\\n|$)/m);
         const altResolved = previousRequest
@@ -1275,9 +1377,12 @@ const server = http.createServer(async (req, res) => {
             const fullContext = [...history.map(m => m.text||''), message].join(' ');
             const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
             const readPaths = altPaths.map(p => readPath(p, isPeak));
-            const priorAlternativeRequests = userHistoryMessages.filter(text =>
-              /more options?|other options?|alternative|another (way|route|option)|different (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(text)
-            ).length;
+            const priorAlternativeRequests = requestedTrip
+              ? 0
+              : userHistoryMessages
+                  .slice(previousRequestIndex + 1)
+                  .filter(text => ALTERNATIVE_INTENT_RE.test(text))
+                  .length;
             const alts = readPaths.slice(priorAlternativeRequests + 1);
             if (alts.length > 0) {
               const altContext = getContext(alts);
