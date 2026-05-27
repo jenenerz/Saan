@@ -15,16 +15,16 @@ const DB = {
     "paranaque":"Paranaque","parañaque":"Paranaque","para":"Paranaque",
     "sucat":"Paranaque","bf homes":"Paranaque","sm bf":"Paranaque","sm bf homes":"Paranaque","bf paranaque":"Paranaque","betterliving":"Paranaque",
     "las pinas":"Las Pinas","las piñas":"Las Pinas","laspinas":"Las Pinas",
-    "alabang":"Alabang","starmall":"Alabang","muntinlupa":"Alabang","vtx":"Alabang",
+    "alabang":"Alabang","alabang town center":"Alabang","atc":"Alabang","starmall":"Alabang","muntinlupa":"Alabang","vtx":"Alabang",
     "bicutan":"Bicutan","sm bicutan":"Bicutan","sm bicutan terminal":"Bicutan","ftf":"Bicutan",
     "arca south":"Arca South","arca south taguig":"Arca South","arca":"Arca South","fti":"FTI","fti terminal":"FTI",
     "kayamanan c":"Kayamanan C","maharlika":"Maharlika","signal":"Signal","signal village":"Signal","triumph":"Triumph","tenement":"Tenement",
     "arca south shuttle loop":"Arca South Shuttle Loop","shuttle loop":"Arca South Shuttle Loop",
     "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
     "pasay":"Pasay","pasay rotonda":"Pasay","rotonda":"Pasay","taft avenue station":"Pasay","mrt 3 taft avenue station":"Pasay","baclaran":"Baclaran","pitx":"PITX",
-    "cavite":"Cavite","bacoor":"Bacoor","bacoor cavite":"Bacoor","sm bacoor":"Bacoor",
-    "dasma":"Dasmarinas","dasmarinas":"Dasmarinas","dasmariñas":"Dasmarinas","dasmarias":"Dasmarinas","dasmarinas cavite":"Dasmarinas",
-    "imus":"Imus","imus cavite":"Imus","molino":"Molino","sm molino":"Molino","molino cavite":"Molino",
+    "cavite":"Cavite","bacoor":"Bacoor","bacoor cavite":"Bacoor","sm bacoor":"Bacoor","somo vista mall":"Bacoor","somo":"Bacoor","vista mall bacoor":"Bacoor",
+    "dasma":"Dasmarinas","dasmarinas":"Dasmarinas","dasmariñas":"Dasmarinas","dasmarias":"Dasmarinas","dasmarinas cavite":"Dasmarinas","robinsons dasmarinas":"Dasmarinas","robinsons dasma":"Dasmarinas",
+    "imus":"Imus","imus cavite":"Imus","lancaster new city":"Imus","lancaster":"Imus","lnc":"Imus","molino":"Molino","sm molino":"Molino","molino cavite":"Molino",
     "tagaytay":"Tagaytay","tagaytay cavite":"Tagaytay","trece":"Trece Martires","trece martires":"Trece Martires","trece marites":"Trece Martires",
     "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
     "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
@@ -413,6 +413,96 @@ const DB = {
     { to:"Bicutan",    mode:"ayala_uv",  service:"Bicutan UV Express - Gate 9", schedule:"Monday to Saturday, 3:00 PM to 10:00 PM; Sunday, 5:00 PM to 7:00 PM", stops:"SM Bicutan, Russia Moonwalk, Russia Village Gate 1 & Gate 2, McDonald's Moonwalk", landmarks:["SM Bicutan"] }
   ],
 
+  // Premium P2P routes supplied for this project update. These remain
+  // separate from city bus entries so express terminal service is not inferred
+  // where it has not been stored. No fares or schedules were supplied.
+  premiumP2P: [
+    {
+      from:{ name:"Greenbelt 5", city:"Makati", aliases:["greenbelt 5","greenbelt","gb5","makati"] },
+      to:{ name:"Alabang Town Center", city:"Muntinlupa", aliases:["alabang town center","atc","alabang","muntinlupa"] },
+      operator:"RRCG Transport", bidirectional:true
+    },
+    {
+      from:{ name:"One Ayala", city:"Makati", aliases:["one ayala","one ayala terminal","ayala terminal","makati"] },
+      to:{ name:"Robinsons Dasmarinas", city:"Cavite", aliases:["robinsons dasmarinas","robinsons dasma","dasmarinas","dasma"] },
+      operator:"MetroExpress Connect", bidirectional:true
+    },
+    {
+      from:{ name:"One Ayala", city:"Makati", aliases:["one ayala","one ayala terminal","ayala terminal","makati"] },
+      to:{ name:"Lancaster New City", city:"Imus, Cavite", aliases:["lancaster new city","lancaster","lnc","imus"] },
+      operator:"LNC Link", bidirectional:true
+    },
+    {
+      from:{ name:"One Ayala", city:"Makati", aliases:["one ayala","one ayala terminal","ayala terminal","makati"] },
+      to:{ name:"Sierra Valley", city:"Cainta", aliases:["sierra valley","sierra","cainta"] },
+      operator:"RRCG Transport", bidirectional:true
+    },
+    {
+      from:{ name:"One Ayala", city:"Makati", aliases:["one ayala","one ayala terminal","ayala terminal","makati"] },
+      to:{ name:"Calamba Crossing", city:"Laguna", aliases:["calamba crossing","calamba"] },
+      operator:"Saint Rose Transit", bidirectional:true
+    },
+    {
+      from:{ name:"Market! Market!", city:"BGC, Taguig", aliases:["market market","market! market!","bgc","taguig"] },
+      to:{ name:"Alabang Town Center", city:"Muntinlupa", aliases:["alabang town center","atc","alabang","muntinlupa"] },
+      operator:"HM Transport", bidirectional:true
+    },
+    {
+      from:{ name:"PITX", city:"Paranaque", aliases:["pitx","paranaque"] },
+      to:{ name:"SM City Baguio", city:"Baguio", aliases:["sm city baguio","sm baguio","baguio"] },
+      operator:"Pangasinan Solid North", bidirectional:true
+    },
+    {
+      from:{ name:"PITX", city:"Paranaque", aliases:["pitx","paranaque"] },
+      to:{ name:"Batangas City Grand Terminal", city:"Batangas", aliases:["batangas city grand terminal","batangas grand terminal","batangas city","batangas"] },
+      operator:"ALPS", bidirectional:true
+    },
+    {
+      from:{ name:"PITX", city:"Paranaque", aliases:["pitx","paranaque"] },
+      to:{ name:"SM City Lipa", city:"Batangas", aliases:["sm city lipa","sm lipa","lipa"] },
+      operator:"ALPS", bidirectional:true
+    },
+    {
+      from:{ name:"PITX", city:"Paranaque", aliases:["pitx","paranaque"] },
+      to:{ name:"San Juan, Batangas", city:"Batangas", aliases:["san juan batangas","san juan, batangas"] },
+      operator:"ALPS", bidirectional:true
+    },
+    {
+      from:{ name:"Greenbelt 5", city:"Makati", aliases:["greenbelt 5","greenbelt","gb5","makati"] },
+      to:{ name:"Batangas City Grand Terminal", city:"Batangas", aliases:["batangas city grand terminal","batangas grand terminal","batangas city","batangas"] },
+      operator:"RRCG Transport", bidirectional:false,
+      stops:["South Park Center Alabang","Vista Terminal Exchange"]
+    },
+    {
+      from:{ name:"Greenbelt 5", city:"Makati", aliases:["greenbelt 5","greenbelt","gb5","makati"] },
+      to:{ name:"SM City Lipa", city:"Batangas", aliases:["sm city lipa","sm lipa","lipa"] },
+      operator:"RRCG Transport", bidirectional:false,
+      stops:["South Park Center Alabang","Vista Terminal Exchange"]
+    },
+    {
+      from:{ name:"SOMO Vista Mall", city:"Bacoor", aliases:["somo vista mall","somo","vista mall bacoor","bacoor"] },
+      to:{ name:"One Ayala", city:"Makati", aliases:["one ayala","one ayala terminal","ayala terminal","makati"] },
+      operator:"MetroExpress Connect", bidirectional:true,
+      stops:["Evia Lifestyle Center","Robinsons Summit Center","Circuit Makati"]
+    },
+    {
+      from:{ name:"Alabang", city:"Muntinlupa", aliases:["alabang","muntinlupa"] },
+      to:{ name:"Lawton", city:"Manila", aliases:["lawton","manila"] },
+      operator:"TAS Trans", bidirectional:true,
+      notes:["Via Alabang-Zapote Road"]
+    },
+    {
+      from:{ name:"Nuvali", city:"Sta. Rosa, Laguna", aliases:["nuvali","sta rosa","santa rosa"] },
+      to:{ name:"Makati", city:"Makati", aliases:["makati"] },
+      operator:"TAS Trans", bidirectional:true
+    },
+    {
+      from:{ name:"Alabang", city:"Muntinlupa", aliases:["alabang","muntinlupa"] },
+      to:{ name:"PITX", city:"Paranaque", aliases:["pitx","paranaque"] },
+      operator:"TAS Trans", bidirectional:true
+    }
+  ],
+
   p2p: [
     { from:"Alabang", to:"BGC",    bus:"HM Worthy",              fare:52, min:45, note:"Via SLEX–C5, TRIPKO card. 6AM–8PM." },
     { from:"Alabang", to:"Makati", bus:"Alabang–Ayala Bus",       fare:48, min:35, note:"Via SLEX. 4AM–10PM. Also RRCG P2P from ATC/SouthPark to Glorietta." },
@@ -751,6 +841,71 @@ function buildCarouselRouteListReply(message) {
   return `${routeSections}\n\nFare guide: PHP 15-75. Confirm the current fare before riding.\nGabay sa pamasahe: PHP 15-75. Kumpirmahin ang kasalukuyang pamasahe bago sumakay.`;
 }
 
+function premiumP2PMatchScore(endpoint, input) {
+  const clean = normalizeCarouselTerm(input);
+  if (!clean) return 0;
+  const exactTerms = [endpoint.name, ...(endpoint.aliases || [])].map(normalizeCarouselTerm);
+  if (exactTerms.includes(clean)) return 3;
+  if (normalizeCarouselTerm(endpoint.city) === clean) return 2;
+  if (clean.length >= 3 && exactTerms.some(term => term.includes(clean) || clean.includes(term))) return 1;
+  return 0;
+}
+
+function findPremiumP2PPaths(originRaw, destinationRaw) {
+  return DB.premiumP2P
+    .flatMap((route, index) => {
+      const forwardScore = premiumP2PMatchScore(route.from, originRaw) + premiumP2PMatchScore(route.to, destinationRaw);
+      const reverseScore = route.bidirectional
+        ? premiumP2PMatchScore(route.to, originRaw) + premiumP2PMatchScore(route.from, destinationRaw)
+        : 0;
+      const matches = [];
+      if (forwardScore > 0 && premiumP2PMatchScore(route.from, originRaw) > 0 && premiumP2PMatchScore(route.to, destinationRaw) > 0) {
+        matches.push({ route, from:route.from, to:route.to, score:forwardScore, id:`PREMIUM_P2P_${index}_OUTBOUND` });
+      }
+      if (reverseScore > 0 && premiumP2PMatchScore(route.to, originRaw) > 0 && premiumP2PMatchScore(route.from, destinationRaw) > 0) {
+        matches.push({ route, from:route.to, to:route.from, score:reverseScore, id:`PREMIUM_P2P_${index}_RETURN` });
+      }
+      return matches;
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(match => ({
+      id:match.id,
+      type:'premium_p2p',
+      description:`P2P Bus - ${match.route.operator}: ${match.from.name} -> ${match.to.name}`,
+      displayOrigin:match.from.name,
+      displayDestination:match.to.name,
+      segments:[{
+        mode:'premium_p2p',
+        from:match.from.name,
+        to:match.to.name,
+        operator:match.route.operator,
+        fare:match.route.fare ?? null,
+        schedule:match.route.schedule || '',
+        stops:match.route.stops || [],
+        notes:match.route.notes || []
+      }],
+      transfers:0
+    }));
+}
+
+function buildPremiumP2PListReply(message) {
+  const clean = normalizeCarouselTerm(message);
+  if (!/^p2p(?: bus)?(?: routes?)? to makati$/.test(clean) && !/^show (?:available )?p2p(?: bus)?(?: routes?)? to makati$/.test(clean)) {
+    return null;
+  }
+  const entries = DB.premiumP2P.flatMap(route => {
+    const directions = [];
+    if (premiumP2PMatchScore(route.to, 'makati') > 0) {
+      directions.push(`${route.from.name} -> ${route.to.name} (${route.operator})`);
+    }
+    if (route.bidirectional && premiumP2PMatchScore(route.from, 'makati') > 0) {
+      directions.push(`${route.to.name} -> ${route.from.name} (${route.operator})`);
+    }
+    return directions;
+  });
+  return `Available P2P Bus routes to Makati:\n${entries.map((entry, index) => `${index + 1}. ${entry}`).join('\n')}\n\nFare and schedule information are not stored; verify with the terminal or operator before riding.\n\nMga available na P2P Bus route papuntang Makati:\n${entries.map((entry, index) => `${index + 1}. ${entry}`).join('\n')}\n\nHindi naka-save ang pamasahe at iskedyul; kumpirmahin sa terminal o operator bago sumakay.`;
+}
+
 function resolveLocations(originRaw, destinationRaw) {
   const normalize = (input) => {
     const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
@@ -804,6 +959,11 @@ function resolveLocations(originRaw, destinationRaw) {
 function listPaths(resolved) {
   const { origin, destination, originArea, destArea, originDisplay = origin, destinationDisplay = destination } = resolved;
   const paths = [];
+
+  const premiumP2PPaths = findPremiumP2PPaths(resolved.originRaw, resolved.destinationRaw);
+  if (premiumP2PPaths.length > 0) {
+    return premiumP2PPaths;
+  }
 
   const carouselPath = findCarouselPath(resolved.originRaw, resolved.destinationRaw);
   if (carouselPath) {
@@ -1106,6 +1266,15 @@ function readPath(p, isPeak) {
         .join('; ');
       label=`EDSA Carousel ${s.direction}: ${s.from} -> ${s.to}`;
       detail=`Board the ${s.direction.toLowerCase()} EDSA Carousel at ${s.from}; alight at ${s.to} after ${stopCount} stop${stopCount === 1 ? '' : 's'}.${endpointConnections ? ` Rail connection: ${endpointConnections}.` : ''} Fare guide: PHP 15-75; verify before boarding. / Sumakay ng ${s.direction.toLowerCase()} EDSA Carousel sa ${s.from}; bumaba sa ${s.to} makalipas ang ${stopCount} hintuan.${endpointConnections ? ` Koneksyon sa tren: ${endpointConnections}.` : ''} Gabay sa pamasahe: PHP 15-75; kumpirmahin bago sumakay.`;
+    } else if (s.mode==='premium_p2p') {
+      fare=s.fare ?? null;
+      min=null;
+      const possibleStops = s.stops.length ? ` Possible stopovers: ${s.stops.join(', ')}.` : '';
+      const serviceNotes = s.notes.length ? ` ${s.notes.join('. ')}.` : '';
+      const fareInfo = s.fare !== null ? ` Fare: PHP ${s.fare}.` : ' Fare not stored; verify before boarding.';
+      const scheduleInfo = s.schedule ? ` Schedule: ${s.schedule}.` : ' Schedule not stored; verify before boarding.';
+      label=`P2P Bus - ${s.operator}: ${s.from} -> ${s.to}`;
+      detail=`Express terminal-to-terminal P2P Bus service with limited stops.${possibleStops}${serviceNotes}${fareInfo}${scheduleInfo} Confirm with ${s.operator} before riding. / Express na P2P Bus mula terminal patungong terminal na may limitadong hintuan.${s.stops.length ? ` Posibleng hintuan: ${s.stops.join(', ')}.` : ''}${s.notes.length ? ` ${s.notes.join('. ')}.` : ''}${s.fare !== null ? ` Pamasahe: PHP ${s.fare}.` : ' Hindi naka-save ang pamasahe; kumpirmahin bago sumakay.'}${s.schedule ? ` Iskedyul: ${s.schedule}.` : ' Hindi naka-save ang iskedyul; kumpirmahin bago sumakay.'} Kumpirmahin sa ${s.operator} bago bumiyahe.`;
     } else if (s.mode==='guided_bus' || s.mode==='guided_uv' || s.mode==='guided_jeep' ||
       s.mode==='guided_terminal' || s.mode==='guided_shuttle' || s.mode==='guided_tricycle' ||
       s.mode==='guided_lrt') {
@@ -1159,7 +1328,7 @@ function parseUserInput(message) {
   if (m) {
     const rawOrigin = m[1].replace(/^(from|sa|paano|how.*go|how.*get)\s+/i,'').trim();
     const rawDest   = m[2].trim().replace(/[,.?!]+$/,'');
-    const questionPhrases = /^(how|what|where|when|why|can|is|are|do|does|i|we|you)/i;
+    const questionPhrases = /^(how|what|where|when|why|can|is|are|do|does|i|we|you)\b/i;
     if (!questionPhrases.test(rawOrigin)) {
       origin      = rawOrigin;
       destination = rawDest;
@@ -1186,7 +1355,7 @@ function buildRouteJson(context, origin, destination) {
   const rec = context.recommended;
   if (!rec) return null;
   return {
-    title: `${origin} → ${destination}`,
+    title: `${rec.displayOrigin || origin} → ${rec.displayDestination || destination}`,
     transfers: rec.transfers,
     totalFare: rec.totalFare,
     totalMin: rec.totalMin,
@@ -1194,6 +1363,7 @@ function buildRouteJson(context, origin, destination) {
       type: s.mode==='MRT-3'   ? 'mrt'  :
             s.mode==='LRT-1' || s.mode==='LRT-2' ? 'lrt' :
             s.mode==='carousel' ? 'bus' :
+            s.mode==='premium_p2p' ? 'p2p' :
             s.mode==='uv' || s.mode==='ayala_uv' || s.mode==='guided_uv' ? 'uv' :
             s.mode==='ayala_bus' || s.mode==='ayala_p2p' || s.mode==='guided_bus' ? 'bus' :
             s.mode==='p2p'   ? 'bus'  :
@@ -1374,6 +1544,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method==='POST' && req.url.startsWith('/api/chat')) {
     try {
       const { message, history=[] } = await readBody(req);
+
+      const premiumP2PList = buildPremiumP2PListReply(message);
+      if (premiumP2PList) {
+        sendJson(res, 200, { type:'chat', text: premiumP2PList });
+        return;
+      }
 
       const carouselRouteList = buildCarouselRouteListReply(message);
       if (carouselRouteList) {
