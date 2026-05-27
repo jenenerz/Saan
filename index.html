@@ -492,6 +492,9 @@ body {
 .step-badge.jeep { background: #FFE2DE; color: #9B2C11; border: 1px solid #9B2C11; }
 .step-badge.bus  { background: #E8EEFF; color: #143F99; border: 1px solid #143F99; }
 .step-badge.uv   { background: #E6F6F1; color: #11644F; border: 1px solid #11644F; }
+.step-badge.terminal { background: #F3ECFF; color: #52328A; border: 1px solid #52328A; }
+.step-badge.shuttle { background: #E8F6FF; color: #075F86; border: 1px solid #075F86; font-size: 8px; }
+.step-badge.tricycle { background: #FFF0D7; color: #8B5300; border: 1px solid #8B5300; }
 .step-badge.walk { background: #F5F5F5; color: #444; border: 1px solid #777; }
 
 .step-lbl { font-size: 12.5px; font-weight: 700; color: #111; line-height: 1.3; }
@@ -1153,12 +1156,12 @@ function renderReply(text) {
   addBotMsg('<p>' + md(text) + '</p>');
 }
 
-const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', uv:'UV', walk:'WALK', p2p:'P2P' };
+const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', uv:'UV', terminal:'TERM', shuttle:'SHUTTLE', tricycle:'TRIKE', walk:'WALK', p2p:'P2P' };
 
 function buildCard(d) {
   const steps = (d.steps||[]).map((s, i) => {
     const t = (s.type||'walk').toLowerCase().replace(/[^a-z]/g,'');
-    const cls = ['mrt','lrt','jeep','bus','uv'].includes(t) ? t : 'walk';
+    const cls = ['mrt','lrt','jeep','bus','uv','terminal','shuttle','tricycle'].includes(t) ? t : 'walk';
     return `<div class="step-row">
       <div class="step-num">${i + 1}</div>
       <div class="step-badge ${cls}">${modeMap[t]||'WALK'}</div>

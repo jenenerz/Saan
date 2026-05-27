@@ -16,7 +16,10 @@ const DB = {
     "sucat":"Paranaque","bf homes":"Paranaque","sm bf":"Paranaque","sm bf homes":"Paranaque","bf paranaque":"Paranaque","betterliving":"Paranaque",
     "las pinas":"Las Pinas","las piñas":"Las Pinas","laspinas":"Las Pinas",
     "alabang":"Alabang","starmall":"Alabang","muntinlupa":"Alabang","vtx":"Alabang",
-    "bicutan":"Bicutan","sm bicutan":"Bicutan","sm bicutan terminal":"Bicutan","ftf":"Bicutan","fti":"Bicutan",
+    "bicutan":"Bicutan","sm bicutan":"Bicutan","sm bicutan terminal":"Bicutan","ftf":"Bicutan",
+    "arca south":"Arca South","arca south taguig":"Arca South","arca":"Arca South","fti":"FTI","fti terminal":"FTI",
+    "kayamanan c":"Kayamanan C","maharlika":"Maharlika","signal":"Signal","signal village":"Signal","triumph":"Triumph","tenement":"Tenement",
+    "arca south shuttle loop":"Arca South Shuttle Loop","shuttle loop":"Arca South Shuttle Loop",
     "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
     "pasay":"Pasay","pasay rotonda":"Pasay","rotonda":"Pasay","taft avenue station":"Pasay","mrt 3 taft avenue station":"Pasay","baclaran":"Baclaran","pitx":"PITX",
     "bacoor":"Bacoor","bacoor cavite":"Bacoor","sm bacoor":"Bacoor",
@@ -58,6 +61,14 @@ const DB = {
     "Bacoor":      { hub:"Bacoor",          hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Dasmarinas":  { hub:"Dasmarinas",      hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "NAIA":        { hub:"NAIA",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Arca South":  { hub:"Arca South",      hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "FTI":         { hub:"FTI",             hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Kayamanan C": { hub:"Kayamanan C",     hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Maharlika":   { hub:"Maharlika",       hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Signal":      { hub:"Signal",          hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Triumph":     { hub:"Triumph",         hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Tenement":    { hub:"Tenement",        hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Arca South Shuttle Loop": { hub:"Arca South Shuttle Loop", hubLine:"P2P", hubMin:0, hubKm:0, hubMode:"origin" },
     "Makati":      { hub:"Ayala",           hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "Buendia":     { hub:"Buendia",         hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Guadalupe":   { hub:"Guadalupe",       hubLine:"MRT-3", hubMin:0,  hubKm:0,  hubMode:"origin"  },
@@ -200,6 +211,62 @@ const DB = {
     }
   ],
 
+  // Arca South and FTI terminal guidance supplied for this project update.
+  // Vehicle type is kept generic when the supplied terminal list does not say
+  // which of the jeep, shuttle, or tricycle services operates that line.
+  terminalRoutes: [
+    { from:"Arca South", to:"Alabang", mode:"guided_terminal", service:"Arca South - Alabang" },
+    { from:"Arca South", to:"Pasay", mode:"guided_terminal", service:"Arca South - Pasay Rotonda / MOA" },
+    { from:"Arca South", to:"MOA", mode:"guided_terminal", service:"Arca South - Pasay Rotonda / MOA" },
+    { from:"Arca South", to:"Guadalupe", mode:"guided_terminal", service:"Arca South - Guadalupe via C5" },
+    { from:"Arca South", to:"Kayamanan C", mode:"guided_terminal", service:"Arca South - Kayamanan C via Pasong Tamo" },
+    { from:"Arca South", to:"Quiapo", mode:"guided_terminal", service:"Arca South - Quiapo" },
+    { from:"Arca South", to:"Makati", mode:"guided_terminal", service:"Arca South - Ayala Makati" },
+    { from:"Arca South", to:"BGC", mode:"guided_terminal", service:"Arca South - BGC" },
+    { from:"Arca South", to:"Novaliches", mode:"guided_terminal", service:"Arca South - Fairview" },
+    {
+      from:"Arca South", to:"Arca South Shuttle Loop", mode:"guided_shuttle",
+      service:"Arca South Shuttle Loop",
+      detail:"Use the Arca South Shuttle Loop service and confirm the current loop stops before boarding. / Gamitin ang Arca South Shuttle Loop at kumpirmahin ang kasalukuyang mga hintuan bago sumakay."
+    },
+    {
+      from:"Arca South", to:"Maharlika", mode:"guided_tricycle",
+      service:"Arca South Tricycle - Maharlika"
+    },
+    {
+      from:"Arca South", to:"Signal", mode:"guided_tricycle",
+      service:"Arca South Tricycle - Signal"
+    },
+    {
+      from:"Arca South", to:"Triumph", mode:"guided_tricycle",
+      service:"Arca South Tricycle - Triumph"
+    },
+    {
+      from:"Arca South", to:"Tenement", mode:"guided_tricycle",
+      service:"Arca South Tricycle - Tenement"
+    },
+    {
+      from:"Manila", to:"FTI", id:"MANILA_GIL_PUYAT_FTI",
+      segments:[
+        {
+          mode:"guided_lrt",
+          label:"LRT-1: Manila area to Gil Puyat Station",
+          detail:"Take LRT-1 and alight at Gil Puyat Station. / Sumakay ng LRT-1 at bumaba sa Gil Puyat Station."
+        },
+        {
+          mode:"guided_bus",
+          label:"Bus: Gil Puyat Station to FTI",
+          detail:"From Gil Puyat Station, look for a bus going to FTI and confirm the signboard before boarding. / Mula Gil Puyat Station, hanapin ang bus na papuntang FTI at kumpirmahin ang karatula bago sumakay."
+        }
+      ]
+    },
+    {
+      from:"Guadalupe", to:"FTI", mode:"guided_terminal",
+      service:"Guadalupe Terminal - FTI",
+      detail:"Alight at MRT-3 Guadalupe Station, proceed to the nearby terminal, then look for an e-jeep or jeep going to FTI. Confirm the signboard before boarding. / Bumaba sa MRT-3 Guadalupe Station, pumunta sa kalapit na terminal, at hanapin ang e-jeep o jeep na papuntang FTI. Kumpirmahin ang karatula bago sumakay."
+    }
+  ],
+
   // One Ayala Terminal routes transcribed from the Sakay.ph terminal guide
   // supplied with this project update. Fare and trip duration are not listed
   // in the supplied tables, so this data stores schedule and stops only.
@@ -265,6 +332,8 @@ const WEATHER_CITY_MAP = {
   "Bacoor":      "Bacoor",
   "Dasmarinas":  "Dasmarinas",
   "NAIA":        "Pasay",
+  "Arca South":  "Taguig",
+  "FTI":         "Taguig",
   "Makati":      "Makati",
   "Buendia":     "Makati",
   "Guadalupe":   "Makati",
@@ -508,6 +577,9 @@ function resolveLocations(originRaw, destinationRaw) {
     if (['one ayala', 'one ayala terminal'].includes(clean)) return 'One Ayala Terminal';
     if (['sm bicutan', 'sm bicutan terminal'].includes(clean)) return 'SM Bicutan';
     if (['bf homes', 'sm bf', 'sm bf homes'].includes(clean)) return 'SM BF Homes';
+    if (['fairview', 'sm fairview'].includes(clean)) return 'Fairview';
+    if (['pasay rotonda', 'rotonda', 'taft avenue station', 'mrt 3 taft avenue station'].includes(clean)) return 'Pasay Rotonda';
+    if (clean === 'ayala makati') return 'Ayala Makati';
     return resolved;
   };
   const origin      = normalize(originRaw);
@@ -516,6 +588,9 @@ function resolveLocations(originRaw, destinationRaw) {
   let destinationDisplay = displayName(destinationRaw, destination);
   if (origin === 'Pasay' && ['Bacoor', 'Dasmarinas'].includes(destination)) {
     originDisplay = 'Pasay Rotonda';
+  }
+  if (origin === 'Arca South' && destination === 'Pasay') {
+    destinationDisplay = 'Pasay Rotonda / MOA';
   }
   if (destination === 'Bacoor') destinationDisplay = 'Bacoor, Cavite';
   if (destination === 'Dasmarinas') destinationDisplay = 'Dasmarinas, Cavite';
@@ -540,6 +615,30 @@ function listPaths(resolved) {
       s.toLowerCase().includes(hub.toLowerCase()) ||
       hub.toLowerCase().includes(s.toLowerCase().split(' ')[0])
     );
+
+  const terminalServices = DB.terminalRoutes.filter(route =>
+    route.from === origin && route.to === destination
+  );
+  if (terminalServices.length > 0) {
+    return terminalServices.map((route, index) => {
+      const segments = route.segments || [{
+        mode: route.mode,
+        label: `${route.mode === 'guided_tricycle' ? 'Tricycle' : route.mode === 'guided_shuttle' ? 'Shuttle' : 'Terminal service'}: ${route.service}`,
+        detail: route.detail || (
+          route.mode === 'guided_tricycle'
+            ? `At Arca South, use the tricycle terminal for ${destinationDisplay}. Confirm the loading point before riding. / Sa Arca South, gamitin ang terminal ng tricycle papuntang ${destinationDisplay}. Kumpirmahin ang sakayan bago bumiyahe.`
+            : `At Arca South, find the terminal service for ${destinationDisplay}. Confirm the available vehicle type and loading point before boarding. / Sa Arca South, hanapin ang terminal service papuntang ${destinationDisplay}. Kumpirmahin ang sasakyan at sakayan bago sumakay.`
+        )
+      }];
+      return {
+        id: route.id || `TERMINAL_${index}`,
+        type: 'terminal_guidance',
+        description: segments.map(segment => segment.label).join(' + '),
+        segments,
+        transfers: Math.max(0, segments.length - 1)
+      };
+    });
+  }
 
   const caviteServices = DB.caviteRoutes.filter(route =>
     route.from === origin && route.to === destination
@@ -784,7 +883,9 @@ function readPath(p, isPeak) {
       min=null;
       label=`UV Express: ${s.service}`;
       detail=`Terminal route for ${s.from} to ${s.to} | Fare not stored; verify current fare at the terminal | No travel-time estimate stored / Rutang terminal mula ${s.from} papuntang ${s.to} | Hindi naka-save ang pamasahe; kumpirmahin sa terminal | Walang naka-save na tantiya ng oras ng biyahe`;
-    } else if (s.mode==='guided_bus' || s.mode==='guided_uv' || s.mode==='guided_jeep') {
+    } else if (s.mode==='guided_bus' || s.mode==='guided_uv' || s.mode==='guided_jeep' ||
+      s.mode==='guided_terminal' || s.mode==='guided_shuttle' || s.mode==='guided_tricycle' ||
+      s.mode==='guided_lrt') {
       fare=null;
       min=null;
       label=s.label;
@@ -861,6 +962,10 @@ function buildRouteJson(context, origin, destination) {
             s.mode==='ayala_bus' || s.mode==='ayala_p2p' || s.mode==='guided_bus' ? 'bus' :
             s.mode==='p2p'   ? 'bus'  :
             s.mode==='jeepney' || s.mode==='guided_jeep' ? 'jeep' :
+            s.mode==='guided_lrt' ? 'lrt' :
+            s.mode==='guided_terminal' ? 'terminal' :
+            s.mode==='guided_shuttle' ? 'shuttle' :
+            s.mode==='guided_tricycle' ? 'tricycle' :
             s.mode==='walk'  ? 'walk' : 'walk',
       label: s.label,
       detail: s.detail,
@@ -969,6 +1074,8 @@ Known Manila landmarks:
 - "Pasay", "Pasay Rotonda", "Taft Avenue Station" = Pasay Rotonda for Cavite-bound routes
 - "Bacoor", "SM Bacoor" = Bacoor, Cavite
 - "Dasma", "Dasmarinas" = Dasmarinas, Cavite
+- "Arca South", "Arca South Taguig" = Arca South
+- "FTI", "FTI Terminal" = FTI
 - "DLSU", "Taft Ave", "Vito Cruz" = Taft area`;
 
 // ── HELPERS ───────────────────────────────────────
@@ -1031,8 +1138,8 @@ const server = http.createServer(async (req, res) => {
     try {
       const { message, history=[] } = await readBody(req);
 
-      // Fast path only fires on the FIRST message (no history).
-      const quickParse = history.length === 0 ? parseUserInput(message) : { origin: null, destination: null };
+      // Direct route requests should use stored routes before AI triage, including in ongoing chats.
+      const quickParse = parseUserInput(message);
 
       if (quickParse.origin && quickParse.destination) {
         const resolved = resolveLocations(quickParse.origin, quickParse.destination);
