@@ -1082,7 +1082,7 @@ const server = http.createServer(async (req, res) => {
             }
           }
         }
-        sendJson(res, 200, { type:'chat', text: `Sorry, wala na akong ibang route options para sa route na yon. Subukan mo mag-specify ng ibang area!` });
+        sendJson(res, 200, { type:'chat', text: `Sorry, I do not have another route option for that trip yet.` });
         return;
       }
 
@@ -1106,11 +1106,22 @@ const server = http.createServer(async (req, res) => {
       console.log('ROUTE PATHS:', paths.map(p => p.description));
 
       if (paths.length === 0) {
+        const knownPlaceNames = {
+          MOA: 'Mall of Asia (MOA)',
+          PITX: 'PITX',
+          BGC: 'BGC',
+          Bacoor: 'Bacoor',
+          Dasmarinas: 'Dasmarinas'
+        };
+        const originSuggestion = knownPlaceNames[resolved.origin] || resolved.origin;
+        const destinationSuggestion = knownPlaceNames[resolved.destination] || resolved.destination;
         const reply = await callGemini(
-          `You are SakayAI. No route found between "${resolved.origin}" and "${resolved.destination}". 
-           Tell the user briefly and suggest they rephrase using simpler area names. Be short and friendly.`,
-          `No route: ${resolved.origin} → ${resolved.destination}`, triageHistory
-        ).catch(() => `Hindi ko mahanap ang route between ${resolved.origin} and ${resolved.destination}. Try mo ulit with a nearby landmark!`);
+          `You are SakayAI. A requested route is not implemented in the current system.
+           Reply using exactly this sentence pattern, replacing only the place values:
+           Sorry, I couldn't find a route between ORIGIN and DESTINATION. Are you trying to say 'ORIGIN_SUGGESTION' or 'DESTINATION_SUGGESTION'? I might not support that exact route yet.
+           Do not suggest simpler area names and do not add any other sentence.`,
+          `ORIGIN=${resolved.origin}; DESTINATION=${resolved.destination}; ORIGIN_SUGGESTION=${originSuggestion}; DESTINATION_SUGGESTION=${destinationSuggestion}`, triageHistory
+        ).catch(() => `No route found between "${resolved.origin}" and "${resolved.destination}". I might not support that exact route yet.`);
         sendJson(res, 200, { type:'chat', text: reply });
         return;
       }
