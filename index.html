@@ -536,13 +536,24 @@ body {
 .input-bar {
   flex-shrink: 0;
   padding: 14px 36px 22px;
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
   border-top: 1px solid var(--soft-line);
   background: rgba(255, 243, 210, 0.94);
   position: relative;
   z-index: 2;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.ai-transparency-note {
+  margin: 9px 0 0;
+  text-align: center;
+  color: #70685e;
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .input-field {
@@ -820,7 +831,9 @@ body {
   .step-row { grid-template-columns: 28px 58px minmax(0, 1fr); }
   .typing-wrap { padding: 16px 20px; }
 
-  .input-bar { padding: 10px 16px 16px; gap: 6px; }
+  .input-bar { padding: 10px 16px 12px; }
+  .input-row { gap: 6px; }
+  .ai-transparency-note { margin-top: 8px; font-size: 9.5px; }
   .new-route-btn { font-size: 9px; padding: 0 10px; }
   .send-btn { width: 44px; height: 44px; }
   .new-route-btn { height: 44px; }
@@ -1008,18 +1021,21 @@ body {
 
     <!-- INPUT BAR -->
     <div class="input-bar">
-      <textarea
-        class="input-field"
-        id="userInput"
-        placeholder="Where are you going?"
-        rows="1"
-        onkeydown="handleKey(event)"
-        oninput="autoGrow(this)"
-      ></textarea>
-      <button class="new-route-btn" onclick="goHome()" title="New Route">
-        ↻ <span class="btn-label">New Route</span>
-      </button>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">▶</button>
+      <div class="input-row">
+        <textarea
+          class="input-field"
+          id="userInput"
+          placeholder="Where are you going?"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoGrow(this)"
+        ></textarea>
+        <button class="new-route-btn" onclick="goHome()" title="New Route">
+          ↻ <span class="btn-label">New Route</span>
+        </button>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">▶</button>
+      </div>
+      <p class="ai-transparency-note">SaanPH is AI and can make mistakes.</p>
     </div>
 
   </div>
