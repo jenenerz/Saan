@@ -13,6 +13,7 @@ The app has a single-page frontend in `index.html` and a Node.js backend in `ser
 - Route cards with step-by-step commute instructions
 - English and Tagalog assistant responses and route guidance
 - Support for MRT-3, LRT-1, LRT-2, jeepney, UV Express, bus/P2P, and walking steps where available in the local data
+- Ordered EDSA Carousel northbound and southbound stop routing, including nearby rail connection notes
 - Follow-up support for alternative routes
 - Weather answers for supported areas when `OPENWEATHER_API_KEY` is set
 - Date-aware weather questions for today/`ngayon` and tomorrow/`bukas`
@@ -140,11 +141,14 @@ The local route data also includes guided Cavite-bound options from Pasay Rotond
 
 Arca South terminal services and the Manila/Guadalupe-to-FTI guidance are also stored as guidance-only paths. When the supplied route list does not identify whether a specific Arca South line uses a jeep, shuttle, or tricycle, the app labels it as a terminal service rather than guessing the vehicle type.
 
+EDSA Carousel stops are stored separately for southbound (`Monumento` to `PITX`) and northbound (`PITX` to `Monumento`) trips. The engine chooses a direction from the stop order, accepts common stop aliases such as `MOA`, `FPJ Station`, `Taft`, and `North Ave`, and includes nearby MRT/LRT connections at the trip endpoints. A full stop list can be requested in chat using a question such as `full EDSA Carousel route`.
+
 ## Known Limitations
 
 - Route coverage is limited to the areas and routes manually listed in `server.js`.
 - Fare and travel time data are hardcoded, so they can become outdated.
 - UV Express routes do not provide stored per-trip fares; users must confirm the current fare at the terminal.
+- EDSA Carousel route cards show a sidebar fare guide range, not a calculated fare for a specific trip.
 - The app needs `GEMINI_API_KEY` for the full chat experience.
 - Weather depends on OpenWeatherMap and may fail if the API key is missing or the request times out.
 - There is no user login, saved history, or database.

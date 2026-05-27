@@ -113,6 +113,65 @@ const DB = {
     fare:{1:12,2:12,3:13,4:14,5:15,6:16,7:17,8:18,9:20,10:22},
     minPerStop:3
   },
+  carousel: {
+    southbound: {
+      direction:"Southbound",
+      stops:[
+        { name:"Monumento", city:"Caloocan", aliases:["monumento"], connection:"LRT-1 Monumento" },
+        { name:"Bagong Barrio", city:"Caloocan", aliases:["bagong barrio"] },
+        { name:"Balintawak", city:"Quezon City", aliases:["balintawak"], connection:"LRT-1 Balintawak" },
+        { name:"Kaingin", city:"Quezon City", aliases:["kaingin"] },
+        { name:"Roosevelt / FPJ Station", city:"Quezon City", aliases:["roosevelt","fpj","fpj station","roosevelt station"], connection:"LRT-1 FPJ Station" },
+        { name:"SM North EDSA", city:"Quezon City", aliases:["sm north","sm north edsa","north edsa"] },
+        { name:"North Avenue", city:"Quezon City", aliases:["north ave","north avenue"], connection:"MRT-3 North Avenue" },
+        { name:"Philam Q.C.", city:"Quezon City", aliases:["philam","philam qc","philam q c"] },
+        { name:"Quezon Avenue", city:"Quezon City", aliases:["quezon ave","quezon avenue"], connection:"MRT-3 Quezon Avenue" },
+        { name:"Kamuning", city:"Quezon City", aliases:["kamuning","gma kamuning"], connection:"MRT-3 GMA-Kamuning" },
+        { name:"Nepa Q. Mart", city:"Quezon City", aliases:["nepa q mart","nepa qmart","nepa"], connection:"MRT-3 Araneta-Cubao" },
+        { name:"Main Avenue", city:"Quezon City", aliases:["main ave","main avenue"] },
+        { name:"Santolan", city:"Mandaluyong", aliases:["santolan","santolan annapolis"], connection:"MRT-3 Santolan-Annapolis" },
+        { name:"Ortigas", city:"Mandaluyong", aliases:["ortigas"], connection:"MRT-3 Ortigas" },
+        { name:"Guadalupe", city:"Makati", aliases:["guadalupe"], connection:"MRT-3 Guadalupe" },
+        { name:"Buendia", city:"Makati", aliases:["buendia"], connection:"MRT-3 Buendia" },
+        { name:"Ayala", city:"Makati", aliases:["ayala"], connection:"MRT-3 Ayala / One Ayala" },
+        { name:"Tramo", city:"Pasay", aliases:["tramo"] },
+        { name:"Taft Avenue", city:"Pasay", aliases:["taft","taft avenue","edsa taft"], connection:"MRT-3 Taft Avenue and LRT-1 EDSA" },
+        { name:"Roxas Boulevard", city:"Pasay", aliases:["roxas boulevard","roxas blvd"] },
+        { name:"SM Mall of Asia / MOA", city:"Pasay", aliases:["moa","sm moa","mall of asia","sm mall of asia"] },
+        { name:"BVA", city:"Pasay", aliases:["bva"] },
+        { name:"Macapagal / Aseana", city:"Paranaque", aliases:["macapagal","aseana","macapagal aseana"] },
+        { name:"PITX", city:"Paranaque", aliases:["pitx"] }
+      ]
+    },
+    northbound: {
+      direction:"Northbound",
+      stops:[
+        { name:"PITX", city:"Paranaque", aliases:["pitx"] },
+        { name:"City of Dreams", city:"Paranaque", aliases:["city of dreams","cod"] },
+        { name:"DFA", city:"Paranaque", aliases:["dfa"] },
+        { name:"SM Mall of Asia / MOA", city:"Pasay", aliases:["moa","sm moa","mall of asia","sm mall of asia"] },
+        { name:"Roxas Boulevard", city:"Pasay", aliases:["roxas boulevard","roxas blvd"] },
+        { name:"Taft Avenue", city:"Pasay", aliases:["taft","taft avenue","edsa taft"], connection:"MRT-3 Taft Avenue and LRT-1 EDSA" },
+        { name:"Ayala", city:"Makati", aliases:["ayala"], connection:"MRT-3 Ayala" },
+        { name:"Buendia", city:"Makati", aliases:["buendia"], connection:"MRT-3 Buendia" },
+        { name:"Guadalupe", city:"Makati", aliases:["guadalupe"], connection:"MRT-3 Guadalupe" },
+        { name:"Ortigas", city:"Mandaluyong", aliases:["ortigas"], connection:"MRT-3 Ortigas" },
+        { name:"Santolan", city:"Mandaluyong", aliases:["santolan","santolan annapolis"], connection:"MRT-3 Santolan-Annapolis" },
+        { name:"Main Avenue", city:"Quezon City", aliases:["main ave","main avenue"] },
+        { name:"Nepa Q. Mart", city:"Quezon City", aliases:["nepa q mart","nepa qmart","nepa"], connection:"MRT-3 Araneta-Cubao" },
+        { name:"Kamuning", city:"Quezon City", aliases:["kamuning","gma kamuning"], connection:"MRT-3 GMA-Kamuning" },
+        { name:"Quezon Avenue", city:"Quezon City", aliases:["quezon ave","quezon avenue"], connection:"MRT-3 Quezon Avenue" },
+        { name:"Philam Q.C.", city:"Quezon City", aliases:["philam","philam qc","philam q c"] },
+        { name:"North Avenue", city:"Quezon City", aliases:["north ave","north avenue"], connection:"MRT-3 North Avenue" },
+        { name:"SM North EDSA", city:"Quezon City", aliases:["sm north","sm north edsa","north edsa"] },
+        { name:"Roosevelt / FPJ Station", city:"Quezon City", aliases:["roosevelt","fpj","fpj station","roosevelt station"], connection:"LRT-1 FPJ Station" },
+        { name:"Kaingin", city:"Quezon City", aliases:["kaingin"] },
+        { name:"Balintawak", city:"Quezon City", aliases:["balintawak"], connection:"LRT-1 Balintawak" },
+        { name:"Bagong Barrio", city:"Caloocan", aliases:["bagong barrio"] },
+        { name:"Monumento", city:"Caloocan", aliases:["monumento"], connection:"LRT-1 Monumento" }
+      ]
+    }
+  },
 
   // UV Express terminal pairs retained from the route references supplied for
   // this project. Fare values are intentionally not stored because the
@@ -634,6 +693,64 @@ function parseTargetHour(text) {
 }
 
 // ── STAGE 1: resolve_locations ────────────────────
+function normalizeCarouselTerm(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function findCarouselStop(input) {
+  const clean = normalizeCarouselTerm(input);
+  if (!clean) return null;
+  const stops = [...DB.carousel.southbound.stops, ...DB.carousel.northbound.stops];
+  for (const stop of stops) {
+    const aliases = [stop.name, ...(stop.aliases || [])].map(normalizeCarouselTerm);
+    if (aliases.includes(clean)) return stop;
+  }
+  return null;
+}
+
+function findCarouselPath(originRaw, destinationRaw) {
+  const originStop = findCarouselStop(originRaw);
+  const destinationStop = findCarouselStop(destinationRaw);
+  if (!originStop || !destinationStop || originStop.name === destinationStop.name) return null;
+  for (const route of [DB.carousel.southbound, DB.carousel.northbound]) {
+    const originIndex = route.stops.findIndex(stop => stop.name === originStop.name);
+    const destinationIndex = route.stops.findIndex(stop => stop.name === destinationStop.name);
+    if (originIndex !== -1 && destinationIndex > originIndex) {
+      return {
+        direction: route.direction,
+        origin: route.stops[originIndex],
+        destination: route.stops[destinationIndex],
+        stops: route.stops.slice(originIndex, destinationIndex + 1)
+      };
+    }
+  }
+  return null;
+}
+
+function formatCarouselStops(route) {
+  return route.stops
+    .map((stop, index) => `${index + 1}. ${stop.name} (${stop.city})${stop.connection ? ` - near ${stop.connection}` : ''}`)
+    .join('\n');
+}
+
+function buildCarouselRouteListReply(message) {
+  const clean = message.toLowerCase();
+  if (!/edsa\s*carousel/.test(clean) || !/\b(full|complete|all|list|stops?|route)\b/.test(clean) || /\s+to\s+/i.test(message)) {
+    return null;
+  }
+  const wantsSouthbound = /\bsouthbound\b|\bpatimog\b/.test(clean);
+  const wantsNorthbound = /\bnorthbound\b|\bpahilaga\b/.test(clean);
+  const routes = wantsSouthbound && !wantsNorthbound
+    ? [DB.carousel.southbound]
+    : wantsNorthbound && !wantsSouthbound
+      ? [DB.carousel.northbound]
+      : [DB.carousel.southbound, DB.carousel.northbound];
+  const routeSections = routes.map(route =>
+    `EDSA Carousel ${route.direction} / ${route.direction === 'Southbound' ? 'Patimog' : 'Pahilaga'}:\n${formatCarouselStops(route)}`
+  ).join('\n\n');
+  return `${routeSections}\n\nFare guide: PHP 15-75. Confirm the current fare before riding.\nGabay sa pamasahe: PHP 15-75. Kumpirmahin ang kasalukuyang pamasahe bago sumakay.`;
+}
+
 function resolveLocations(originRaw, destinationRaw) {
   const normalize = (input) => {
     const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
@@ -658,8 +775,8 @@ function resolveLocations(originRaw, destinationRaw) {
   };
   const origin      = normalize(originRaw);
   const destination = normalize(destinationRaw);
-  let originDisplay = displayName(originRaw, origin);
-  let destinationDisplay = displayName(destinationRaw, destination);
+  let originDisplay = findCarouselStop(originRaw)?.name || displayName(originRaw, origin);
+  let destinationDisplay = findCarouselStop(destinationRaw)?.name || displayName(destinationRaw, destination);
   if (origin === 'Pasay' && ['Cavite', 'Bacoor', 'Imus', 'Dasmarinas', 'Molino', 'Tagaytay', 'Trece Martires'].includes(destination)) {
     originDisplay = 'Pasay Rotonda';
   }
@@ -687,6 +804,24 @@ function resolveLocations(originRaw, destinationRaw) {
 function listPaths(resolved) {
   const { origin, destination, originArea, destArea, originDisplay = origin, destinationDisplay = destination } = resolved;
   const paths = [];
+
+  const carouselPath = findCarouselPath(resolved.originRaw, resolved.destinationRaw);
+  if (carouselPath) {
+    return [{
+      id:`EDSA_CAROUSEL_${carouselPath.direction.toUpperCase()}`,
+      type:'edsa_carousel',
+      description:`EDSA Carousel ${carouselPath.direction}: ${carouselPath.origin.name} -> ${carouselPath.destination.name}`,
+      segments:[{
+        mode:'carousel',
+        direction:carouselPath.direction,
+        from:carouselPath.origin.name,
+        to:carouselPath.destination.name,
+        orderedStops:carouselPath.stops,
+        stops:carouselPath.stops.length - 1
+      }],
+      transfers:0
+    }];
+  }
 
   const stationIdx = (line, hub) =>
     line.stations.findIndex(s =>
@@ -961,6 +1096,16 @@ function readPath(p, isPeak) {
       min=null;
       label=`UV Express: ${s.service}`;
       detail=`Terminal route for ${s.from} to ${s.to} | Fare not stored; verify current fare at the terminal | No travel-time estimate stored / Rutang terminal mula ${s.from} papuntang ${s.to} | Hindi naka-save ang pamasahe; kumpirmahin sa terminal | Walang naka-save na tantiya ng oras ng biyahe`;
+    } else if (s.mode==='carousel') {
+      fare=null;
+      min=null;
+      const stopCount = Math.max(1, s.orderedStops.length - 1);
+      const endpointConnections = [s.orderedStops[0], s.orderedStops[s.orderedStops.length - 1]]
+        .filter(stop => stop.connection)
+        .map(stop => `${stop.name}: ${stop.connection}`)
+        .join('; ');
+      label=`EDSA Carousel ${s.direction}: ${s.from} -> ${s.to}`;
+      detail=`Board the ${s.direction.toLowerCase()} EDSA Carousel at ${s.from}; alight at ${s.to} after ${stopCount} stop${stopCount === 1 ? '' : 's'}.${endpointConnections ? ` Rail connection: ${endpointConnections}.` : ''} Fare guide: PHP 15-75; verify before boarding. / Sumakay ng ${s.direction.toLowerCase()} EDSA Carousel sa ${s.from}; bumaba sa ${s.to} makalipas ang ${stopCount} hintuan.${endpointConnections ? ` Koneksyon sa tren: ${endpointConnections}.` : ''} Gabay sa pamasahe: PHP 15-75; kumpirmahin bago sumakay.`;
     } else if (s.mode==='guided_bus' || s.mode==='guided_uv' || s.mode==='guided_jeep' ||
       s.mode==='guided_terminal' || s.mode==='guided_shuttle' || s.mode==='guided_tricycle' ||
       s.mode==='guided_lrt') {
@@ -1010,10 +1155,10 @@ function parseUserInput(message) {
   const hasRouteIntent = /\b(to|papunta|goin|going|from|paano|how.*go|how.*get|how.*reach|directions?|route|commute|sakay)\b/i.test(message);
   if (!hasRouteIntent) return { origin: null, destination: null, isPeak };
 
-  const m = message.match(/(?:from\s+)?(.+?)\s+to\s+(.+?)(?:\s*[,.]|$|\s+[₱p]\d|\s+need|\s+by\s+\d)/i);
+  const m = message.match(/(?:from\s+)?(.+?)\s+to\s+(.+?)(?:$|\s+[₱p]\d|\s+need|\s+by\s+\d)/i);
   if (m) {
     const rawOrigin = m[1].replace(/^(from|sa|paano|how.*go|how.*get)\s+/i,'').trim();
-    const rawDest   = m[2].trim();
+    const rawDest   = m[2].trim().replace(/[,.?!]+$/,'');
     const questionPhrases = /^(how|what|where|when|why|can|is|are|do|does|i|we|you)/i;
     if (!questionPhrases.test(rawOrigin)) {
       origin      = rawOrigin;
@@ -1048,6 +1193,7 @@ function buildRouteJson(context, origin, destination) {
     steps: rec.segments.map(s => ({
       type: s.mode==='MRT-3'   ? 'mrt'  :
             s.mode==='LRT-1' || s.mode==='LRT-2' ? 'lrt' :
+            s.mode==='carousel' ? 'bus' :
             s.mode==='uv' || s.mode==='ayala_uv' || s.mode==='guided_uv' ? 'uv' :
             s.mode==='ayala_bus' || s.mode==='ayala_p2p' || s.mode==='guided_bus' ? 'bus' :
             s.mode==='p2p'   ? 'bus'  :
@@ -1228,6 +1374,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method==='POST' && req.url.startsWith('/api/chat')) {
     try {
       const { message, history=[] } = await readBody(req);
+
+      const carouselRouteList = buildCarouselRouteListReply(message);
+      if (carouselRouteList) {
+        sendJson(res, 200, { type:'chat', text: carouselRouteList });
+        return;
+      }
 
       // Direct route requests should use stored routes before AI triage, including in ongoing chats.
       // Alternative requests are handled from history below so named trips can select their second path.
