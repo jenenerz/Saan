@@ -329,14 +329,75 @@ function getWeather(areaName) {
 }
 
 // ── FORECAST WEATHER ──────────────────────────────
-// targetHour: 0-23 (local PH time). If null, returns the next available slot.
-function getWeatherForecast(areaName, targetHour) {
+function phDateParts(date = new Date()) {
+  const shifted = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours()
+  };
+}
+
+function phDateKeyFromParts(parts) {
+  return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+}
+
+function getPhDateKey(offsetDays = 0) {
+  const now = phDateParts();
+  const target = new Date(Date.UTC(now.year, now.month - 1, now.day + offsetDays));
+  return phDateKeyFromParts({
+    year: target.getUTCFullYear(),
+    month: target.getUTCMonth() + 1,
+    day: target.getUTCDate()
+  });
+}
+
+function formatPhForecastDate(dateKey, relativeLabel = '') {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const dateText = new Intl.DateTimeFormat('en-PH', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'Asia/Manila'
+  }).format(new Date(Date.UTC(year, month - 1, day, 4)));
+  return relativeLabel ? `${relativeLabel}, ${dateText}` : dateText;
+}
+
+function formatHour(hour) {
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour % 12 || 12;
+  return `${h12}:00 ${ampm}`;
+}
+
+function parseTargetDate(text) {
+  const lower = String(text || '').toLowerCase();
+  if (/\b(tomorrow|bukas)\b/.test(lower)) {
+    const dateKey = getPhDateKey(1);
+    return { dateKey, displayDate: formatPhForecastDate(dateKey, 'tomorrow') };
+  }
+  if (/\b(today|ngayon|mamaya)\b/.test(lower)) {
+    const dateKey = getPhDateKey(0);
+    return { dateKey, displayDate: formatPhForecastDate(dateKey, 'today') };
+  }
+  const explicit = lower.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+  if (explicit) {
+    const dateKey = `${explicit[1]}-${explicit[2]}-${explicit[3]}`;
+    return { dateKey, displayDate: formatPhForecastDate(dateKey) };
+  }
+  return null;
+}
+
+// targetHour: 0-23 (local PH time). targetDateKey: YYYY-MM-DD in PH time.
+// If no target hour is supplied, returns the first forecast slot on the target date.
+function getWeatherForecast(areaName, targetHour, targetDateKey = null, requestedDisplayDate = '') {
   return new Promise((resolve) => {
     const apiKey = process.env.OPENWEATHER_API_KEY;
     if (!apiKey) { resolve(null); return; }
 
     const city = WEATHER_CITY_MAP[areaName] || areaName;
-    const urlPath = `/data/2.5/forecast?q=${encodeURIComponent(city + ',PH')}&appid=${apiKey}&units=metric&cnt=16`;
+    const urlPath = `/data/2.5/forecast?q=${encodeURIComponent(city + ',PH')}&appid=${apiKey}&units=metric&cnt=40`;
 
     const req = https.request({
       hostname: 'api.openweathermap.org',
@@ -350,13 +411,20 @@ function getWeatherForecast(areaName, targetHour) {
           const json = JSON.parse(data);
           if (!json.list || json.list.length === 0) { resolve(null); return; }
 
-          // Each slot is a 3-hour window. Find the best match for targetHour (PH = UTC+8).
+          const matchingDateSlots = targetDateKey
+            ? json.list.filter(slot => {
+                const parts = phDateParts(new Date(slot.dt * 1000));
+                return phDateKeyFromParts(parts) === targetDateKey;
+              })
+            : json.list;
+          if (matchingDateSlots.length === 0) { resolve(null); return; }
+
+          // Each slot is a 3-hour window. Find the best time match in the requested PH date.
           let bestSlot = null;
           if (targetHour !== null && targetHour !== undefined) {
             let minDiff = Infinity;
-            for (const slot of json.list) {
-              const slotDate = new Date((slot.dt + 8 * 3600) * 1000); // shift to PH time
-              const slotHour = slotDate.getUTCHours();
+            for (const slot of matchingDateSlots) {
+              const slotHour = phDateParts(new Date(slot.dt * 1000)).hour;
               const diff = Math.abs(slotHour - targetHour);
               if (diff < minDiff) {
                 minDiff = diff;
@@ -364,17 +432,15 @@ function getWeatherForecast(areaName, targetHour) {
               }
             }
           } else {
-            bestSlot = json.list[0]; // next available slot
+            bestSlot = matchingDateSlots[0];
           }
 
           if (!bestSlot) { resolve(null); return; }
 
           // Format the PH local time for display
-          const slotDate = new Date((bestSlot.dt + 8 * 3600) * 1000);
-          const displayHour = slotDate.getUTCHours();
-          const ampm = displayHour >= 12 ? 'PM' : 'AM';
-          const h12 = displayHour % 12 || 12;
-          const displayTime = `${h12}:00 ${ampm}`;
+          const slotParts = phDateParts(new Date(bestSlot.dt * 1000));
+          const slotDateKey = phDateKeyFromParts(slotParts);
+          const displayTime = formatHour(slotParts.hour);
 
           resolve({
             description: bestSlot.weather[0].description,
@@ -384,6 +450,9 @@ function getWeatherForecast(areaName, targetHour) {
             humidity:    bestSlot.main.humidity,
             isRainy:     /rain|thunder|drizzle/i.test(bestSlot.weather[0].main),
             displayTime,
+            requestedTime: targetHour === null || targetHour === undefined ? null : formatHour(targetHour),
+            displayDate: requestedDisplayDate || formatPhForecastDate(slotDateKey),
+            dateKey: slotDateKey,
             city
           });
         } catch (e) {
@@ -877,9 +946,11 @@ If yes, output ONLY: SHOW_ALTERNATIVES
 
 STEP 2 — Check if the user is asking about weather for a specific location and time.
 Weather question examples: "will it rain in MOA at 6pm?", "papatak ba ulan sa BGC mamaya?",
-"what's the weather like in Makati tonight?", "is it going to rain?".
-If yes, output ONLY: WEATHER_QUERY: location="X" time="6pm"
-Use "now" for time if no specific time is mentioned.
+"what's the weather like in Makati tonight?", "uulan ba bukas 4pm sa makati?".
+If yes, output ONLY: WEATHER_QUERY: location="X" date="today|tomorrow|YYYY-MM-DD|unspecified" time="6pm|unspecified"
+Use date="tomorrow" for "tomorrow" or "bukas", and date="today" for "today", "ngayon", or "mamaya".
+Use time="now" for a current-conditions question using "now" or "ngayon" without a stated hour.
+Use time="unspecified" for a future-date question with no specific time. Do not change a request for tomorrow into today.
 
 STEP 3 — Check if the user wants a brand-new route (different origin/destination).
 If yes, extract origin and destination and output ONLY:
@@ -899,12 +970,6 @@ Known Manila landmarks:
 - "Bacoor", "SM Bacoor" = Bacoor, Cavite
 - "Dasma", "Dasmarinas" = Dasmarinas, Cavite
 - "DLSU", "Taft Ave", "Vito Cruz" = Taft area`;
-
-const WEATHER_ANSWER_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
-You have been given a weather forecast result. Write a short, friendly answer about the weather.
-Write ONE sentence in English, then ONE sentence in Filipino/Tagalog.
-If it is rainy, naturally suggest bringing an umbrella or raincoat.
-Do NOT output JSON or route data. Just the two friendly sentences.`;
 
 // ── HELPERS ───────────────────────────────────────
 function readBody(req) {
@@ -926,6 +991,34 @@ function sendJson(res, status, data) {
 function buildWeatherNote(weather) {
   if (!weather) return '';
   return `Weather at destination: ${weather.description}, ${weather.temp}°C, humidity ${weather.humidity}%.${weather.isRainy ? ' IT IS CURRENTLY RAINING.' : ''}`;
+}
+
+function buildForecastAnswer(location, forecast) {
+  const englishDate = /^(today|tomorrow),/.test(forecast.displayDate)
+    ? forecast.displayDate
+    : `on ${forecast.displayDate}`;
+  let tagalogDate = `sa ${forecast.displayDate}`;
+  if (forecast.displayDate.startsWith('tomorrow,')) {
+    tagalogDate = `bukas, ${forecast.displayDate.replace(/^tomorrow,\s*/, '')}`;
+  } else if (forecast.displayDate.startsWith('today,')) {
+    tagalogDate = `ngayong araw, ${forecast.displayDate.replace(/^today,\s*/, '')}`;
+  }
+  const englishRain = forecast.isRainy
+    ? ' Rain is expected; please bring an umbrella.'
+    : ' Rain is not expected around this time.';
+  const tagalogRain = forecast.isRainy
+    ? ' May inaasahang ulan; magdala ng payong.'
+    : ' Walang inaasahang ulan sa mga oras na ito.';
+  if (forecast.requestedTime && forecast.requestedTime !== forecast.displayTime) {
+    return `Forecast for ${location} ${englishDate}:\nThe closest available forecast to your requested time of ${forecast.requestedTime} is for ${forecast.displayTime}: ${forecast.description}, about ${forecast.temp}°C.${englishRain}\n\nTaya ng panahon sa ${location} ${tagalogDate}:\nAng pinakamalapit na available na forecast sa hiniling mong oras na ${forecast.requestedTime} ay para sa ${forecast.displayTime}: ${forecast.description}, humigit-kumulang ${forecast.temp}°C.${tagalogRain}`;
+  }
+  const englishWhen = forecast.displayTime === 'now'
+    ? `${englishDate} right now`
+    : `${englishDate} at ${forecast.displayTime}`;
+  const tagalogWhen = forecast.displayTime === 'now'
+    ? `${tagalogDate} sa ngayon`
+    : `${tagalogDate} nang ${forecast.displayTime}`;
+  return `Forecast for ${location} ${englishWhen}: ${forecast.description}, about ${forecast.temp}°C.${englishRain}\nTaya ng panahon sa ${location} ${tagalogWhen}: ${forecast.description}, humigit-kumulang ${forecast.temp}°C.${tagalogRain}`;
 }
 
 // ── SERVER ────────────────────────────────────────
@@ -1012,21 +1105,35 @@ const server = http.createServer(async (req, res) => {
       }
 
       // ── Handle WEATHER_QUERY ──
-      const weatherQueryMatch = triageReply.match(/WEATHER_QUERY:\s*location="([^"]+)"\s*time="([^"]+)"/i);
+      const weatherQueryMatch = triageReply.match(/WEATHER_QUERY:\s*location="([^"]+)"(?:\s+date="([^"]+)")?\s+time="([^"]+)"/i);
       if (weatherQueryMatch) {
         const weatherLocation = weatherQueryMatch[1].trim();
-        const weatherTimeStr  = weatherQueryMatch[2].trim();
+        const weatherDateStr  = (weatherQueryMatch[2] || '').trim();
+        const weatherTimeStr  = weatherQueryMatch[3].trim();
 
         // Resolve the location using the existing alias system
         const resolvedLocation = resolveLocations(weatherLocation, weatherLocation).origin;
+        const requestedDate = parseTargetDate(`${message} ${weatherDateStr}`);
+        const requestedHour = parseTargetHour(message) ?? parseTargetHour(weatherTimeStr);
+        const todayKey = getPhDateKey(0);
+        const requestsCurrentConditions =
+          weatherTimeStr.toLowerCase() === 'now' &&
+          (!requestedDate || requestedDate.dateKey === todayKey);
 
         let forecastResult = null;
-        if (weatherTimeStr.toLowerCase() === 'now') {
+        if (requestsCurrentConditions) {
           forecastResult = await getWeather(resolvedLocation);
-          if (forecastResult) forecastResult.displayTime = 'now';
+          if (forecastResult) {
+            forecastResult.displayTime = 'now';
+            forecastResult.displayDate = formatPhForecastDate(todayKey, 'today');
+          }
         } else {
-          const targetHour = parseTargetHour(weatherTimeStr);
-          forecastResult = await getWeatherForecast(resolvedLocation, targetHour);
+          forecastResult = await getWeatherForecast(
+            resolvedLocation,
+            requestedHour,
+            requestedDate?.dateKey || null,
+            requestedDate?.displayDate || ''
+          );
         }
 
         if (!forecastResult) {
@@ -1034,12 +1141,7 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
-        const forecastContext = `Location: ${resolvedLocation}. Time: ${forecastResult.displayTime}. Weather: ${forecastResult.description}, ${forecastResult.temp}°C, humidity ${forecastResult.humidity}%.${forecastResult.isRainy ? ' IT IS RAINY.' : ''}`;
-
-        const weatherAnswer = await callGemini(WEATHER_ANSWER_PROMPT, forecastContext, triageHistory)
-          .catch(() => `At ${forecastResult.displayTime} in ${resolvedLocation}: ${forecastResult.description}, ${forecastResult.temp}°C.${forecastResult.isRainy ? ' Please bring an umbrella.' : ''}\nSa ${forecastResult.displayTime} sa ${resolvedLocation}: ${forecastResult.description}, ${forecastResult.temp}°C.${forecastResult.isRainy ? ' Magdala ng payong.' : ''}`);
-
-        sendJson(res, 200, { type:'chat', text: weatherAnswer.trim() });
+        sendJson(res, 200, { type:'chat', text: buildForecastAnswer(resolvedLocation, forecastResult) });
         return;
       }
 
