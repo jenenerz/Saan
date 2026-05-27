@@ -1079,11 +1079,11 @@ async function runAgentLoop() {
     })
   });
 
-  if (!res.ok) throw new Error(`Server error ${res.status}: ${res.statusText}`);
+  if (!res.ok) throw new Error(`We're having trouble processing your request right now. Please try again.\nNahihirapan kaming iproseso ang request mo ngayon. Pakisubukan muli.`);
   let data;
-  try { data = await res.json(); } catch(e) { throw new Error('Invalid response from server'); }
+  try { data = await res.json(); } catch(e) { throw new Error(`We're having trouble processing your request right now. Please try again.\nNahihirapan kaming iproseso ang request mo ngayon. Pakisubukan muli.`); }
   if (data.error) throw new Error(data.error);
-  if (!data.text) throw new Error('Empty response from server');
+  if (!data.text) throw new Error(`We're having trouble processing your request right now. Please try again.\nNahihirapan kaming iproseso ang request mo ngayon. Pakisubukan muli.`);
   return data.text;
 }
 

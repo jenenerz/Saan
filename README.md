@@ -11,6 +11,7 @@ The app has a single-page frontend in `index.html` and a Node.js backend in `ser
 - Example route buttons on the home screen
 - Local route matching for known Metro Manila areas and landmarks
 - Route cards with step-by-step commute instructions
+- English and Tagalog assistant responses and route guidance
 - Support for MRT-3, LRT-1, LRT-2, jeepney, UV Express, bus/P2P, and walking steps where available in the local data
 - Follow-up support for alternative routes
 - Weather answers for supported areas when `OPENWEATHER_API_KEY` is set

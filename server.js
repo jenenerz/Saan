@@ -129,7 +129,7 @@ const DB = {
       segments:[{
         mode:"guided_bus",
         label:"Bus: Pasay Rotonda / Taft Avenue Station to Bacoor, Cavite",
-        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip stops in Bacoor before boarding."
+        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip stops in Bacoor before boarding. / Pumunta sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda at hanapin ang bus na biyaheng Tagaytay. Kumpirmahin muna na dadaan ito sa Bacoor bago sumakay."
       }]
     },
     {
@@ -138,12 +138,12 @@ const DB = {
         {
           mode:"guided_jeep",
           label:"Jeepney: Pasay Rotonda / Taft Avenue Station to MOA",
-          detail:"From Pasay Rotonda or Taft Avenue Station, ride a jeepney bound for MOA."
+          detail:"From Pasay Rotonda or Taft Avenue Station, ride a jeepney bound for MOA. / Mula Pasay Rotonda o Taft Avenue Station, sumakay ng jeepney na papuntang MOA."
         },
         {
           mode:"guided_uv",
           label:"UV Express: MOA to Bacoor, Cavite",
-          detail:"At MOA, look for a UV Express with signboards such as Molino Blvd, SM Bacoor, or Soldiers. Fare not stored; verify current fare before riding."
+          detail:"At MOA, look for a UV Express with signboards such as Molino Blvd, SM Bacoor, or Soldiers. Fare not stored; verify current fare before riding. / Sa MOA, hanapin ang UV Express na may karatulang Molino Blvd, SM Bacoor, o Soldiers. Hindi naka-save ang pamasahe; kumpirmahin muna ang kasalukuyang pamasahe bago sumakay."
         }
       ]
     },
@@ -153,17 +153,17 @@ const DB = {
         {
           mode:"guided_jeep",
           label:"Jeepney: Pasay Rotonda / Taft Avenue Station to MOA",
-          detail:"From Pasay Rotonda or Taft Avenue Station, ride a jeepney bound for MOA."
+          detail:"From Pasay Rotonda or Taft Avenue Station, ride a jeepney bound for MOA. / Mula Pasay Rotonda o Taft Avenue Station, sumakay ng jeepney na papuntang MOA."
         },
         {
           mode:"guided_bus",
           label:"EDSA Carousel: MOA to PITX",
-          detail:"From MOA, ride the EDSA Carousel southbound to PITX."
+          detail:"From MOA, ride the EDSA Carousel southbound to PITX. / Mula MOA, sumakay ng southbound EDSA Carousel papuntang PITX."
         },
         {
           mode:"guided_bus",
           label:"Bus: PITX to Bacoor, Cavite",
-          detail:"At PITX, transfer to a bus going to Bacoor. Confirm the bay and destination signboard before boarding."
+          detail:"At PITX, transfer to a bus going to Bacoor. Confirm the bay and destination signboard before boarding. / Sa PITX, lumipat sa bus na papuntang Bacoor. Kumpirmahin ang bay at karatula ng destinasyon bago sumakay."
         }
       ]
     },
@@ -172,7 +172,7 @@ const DB = {
       segments:[{
         mode:"guided_uv",
         label:"UV Express: MOA to Bacoor, Cavite",
-        detail:"At MOA, look for a UV Express with signboards such as Molino Blvd, SM Bacoor, or Soldiers. Fare not stored; verify current fare before riding."
+        detail:"At MOA, look for a UV Express with signboards such as Molino Blvd, SM Bacoor, or Soldiers. Fare not stored; verify current fare before riding. / Sa MOA, hanapin ang UV Express na may karatulang Molino Blvd, SM Bacoor, o Soldiers. Hindi naka-save ang pamasahe; kumpirmahin muna ang kasalukuyang pamasahe bago sumakay."
       }]
     },
     {
@@ -181,12 +181,12 @@ const DB = {
         {
           mode:"guided_bus",
           label:"EDSA Carousel: MOA to PITX",
-          detail:"From MOA, ride the EDSA Carousel southbound to PITX."
+          detail:"From MOA, ride the EDSA Carousel southbound to PITX. / Mula MOA, sumakay ng southbound EDSA Carousel papuntang PITX."
         },
         {
           mode:"guided_bus",
           label:"Bus: PITX to Bacoor, Cavite",
-          detail:"At PITX, transfer to a bus going to Bacoor. Confirm the bay and destination signboard before boarding."
+          detail:"At PITX, transfer to a bus going to Bacoor. Confirm the bay and destination signboard before boarding. / Sa PITX, lumipat sa bus na papuntang Bacoor. Kumpirmahin ang bay at karatula ng destinasyon bago sumakay."
         }
       ]
     },
@@ -195,7 +195,7 @@ const DB = {
       segments:[{
         mode:"guided_bus",
         label:"Bus: Pasay Rotonda / Taft Avenue Station to Dasmarinas, Cavite",
-        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip serves Dasmarinas before boarding."
+        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip serves Dasmarinas before boarding. / Pumunta sa terminal malapit sa MRT-3 Taft Avenue Station sa Pasay Rotonda at hanapin ang bus na biyaheng Tagaytay. Kumpirmahin muna na dadaan ito sa Dasmarinas bago sumakay."
       }]
     }
   ],
@@ -682,39 +682,39 @@ function readPath(p, isPeak) {
       min=Math.ceil(n*DB.mrt3.minPerStop+5);
       const dir = s.from && s.to ? (DB.mrt3.stations.indexOf(s.to) > DB.mrt3.stations.indexOf(s.from) ? 'Northbound' : 'Southbound') : '';
       label=`MRT-3 ${dir}: ${s.from} → ${s.to}`;
-      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Expect queues at turnstiles':''}`;
+      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Expect queues at turnstiles':''} / Sumakay sa ${s.from} station · ${n} hintuan · Bumaba sa ${s.to}${isPeak?' · Asahan ang pila sa turnstiles':''}`;
     } else if (s.mode==='LRT-1') {
       const n=s.stops||1;
       fare=DB.lrt1.fare[Math.min(n,17)]||30;
       min=Math.ceil(n*DB.lrt1.minPerStop+5);
       const dir = DB.lrt1.stations.indexOf(s.to) > DB.lrt1.stations.indexOf(s.from) ? 'Northbound' : 'Southbound';
       label=`LRT-1 ${dir}: ${s.from} → ${s.to}`;
-      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Very crowded during rush hour':''}`;
+      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}${isPeak?' · Very crowded during rush hour':''} / Sumakay sa ${s.from} station · ${n} hintuan · Bumaba sa ${s.to}${isPeak?' · Asahang siksikan sa rush hour':''}`;
     } else if (s.mode==='LRT-2') {
       const n=s.stops||1;
       fare=DB.lrt2.fare[Math.min(n,10)]||22;
       min=Math.ceil(n*DB.lrt2.minPerStop+4);
       const dir = DB.lrt2.stations.indexOf(s.to) > DB.lrt2.stations.indexOf(s.from) ? 'Eastbound' : 'Westbound';
       label=`LRT-2 ${dir}: ${s.from} → ${s.to}`;
-      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to}`;
+      detail=`Board at ${s.from} station · ${n} stop${n>1?'s':''} · Alight at ${s.to} / Sumakay sa ${s.from} station · ${n} hintuan · Bumaba sa ${s.to}`;
     } else if (s.mode==='jeepney') {
       const km=s.km||4;
       fare=km<=4?13:Math.ceil(13+(km-4)*1.80);
       min=Math.ceil((s.min||20)*pm);
       label=`Jeepney: ${s.from} → ${s.to}`;
-      detail=`Ride jeepney from ${s.from} going to ${s.to} · ~${km}km · Flag down along the route${isPeak?' · Heavy traffic expected':''}`;
+      detail=`Ride jeepney from ${s.from} going to ${s.to} · ~${km}km · Flag down along the route${isPeak?' · Heavy traffic expected':''} / Sumakay ng jeepney mula ${s.from} papuntang ${s.to} · ~${km}km · Maaaring pumara sa ruta${isPeak?' · Asahan ang matinding trapiko':''}`;
       if (s.signboard) {
-        detail=`From ${s.from}, look for a jeepney with the "${s.signboard}" signboard and alight at ${s.signboard} (~${km} km)${isPeak?' - Heavy traffic expected':''}`;
+        detail=`From ${s.from}, look for a jeepney with the "${s.signboard}" signboard and alight at ${s.signboard} (~${km} km)${isPeak?' - Heavy traffic expected':''} / Mula ${s.from}, hanapin ang jeepney na may karatulang "${s.signboard}" at bumaba sa ${s.signboard} (~${km} km)${isPeak?' - Asahan ang matinding trapiko':''}`;
       }
     } else if (s.mode==='walk') {
       fare=0; min=s.min||5;
       label=`Walk: ${s.from} → ${s.to}`;
-      detail=s.note||`Walk from ${s.from} to ${s.to}`;
+      detail=`${s.note||`Walk from ${s.from} to ${s.to}`} / Maglakad mula ${s.from} papuntang ${s.to}.`;
     } else if (s.mode==='uv') {
       fare=null;
       min=null;
       label=`UV Express: ${s.service}`;
-      detail=`Terminal route for ${s.from} to ${s.to} | Fare not stored; verify current fare at the terminal | No travel-time estimate stored`;
+      detail=`Terminal route for ${s.from} to ${s.to} | Fare not stored; verify current fare at the terminal | No travel-time estimate stored / Rutang terminal mula ${s.from} papuntang ${s.to} | Hindi naka-save ang pamasahe; kumpirmahin sa terminal | Walang naka-save na tantiya ng oras ng biyahe`;
     } else if (s.mode==='guided_bus' || s.mode==='guided_uv' || s.mode==='guided_jeep') {
       fare=null;
       min=null;
@@ -724,12 +724,12 @@ function readPath(p, isPeak) {
       fare=null;
       min=null;
       label=`${s.service}: ${s.from} -> ${s.to}`;
-      detail=`Schedule: ${s.schedule} | Stops: ${s.stops} | Fare and travel time not stored; verify at One Ayala Terminal`;
+      detail=`Schedule: ${s.schedule} | Stops: ${s.stops} | Fare and travel time not stored; verify at One Ayala Terminal / Iskedyul: ${s.schedule} | Mga hintuan: ${s.stops} | Hindi naka-save ang pamasahe at oras ng biyahe; kumpirmahin sa One Ayala Terminal`;
     } else if (s.mode==='p2p') {
       fare=s.fare||0;
       min=Math.ceil((s.min||40)*(isPeak?1.3:1));
       label=`${s.bus||'P2P Bus'}: ${s.from} → ${s.to}`;
-      detail=`${s.note||'Air-conditioned · Fixed fare · No stops'}${isPeak?' · May be delayed due to traffic':''}`;
+      detail=`${s.note||'Air-conditioned · Fixed fare · No stops'}${isPeak?' · May be delayed due to traffic':''} / Kumpirmahin ang karatula at pamasahe bago sumakay${isPeak?' · Maaaring maantala dahil sa trapiko':''}.`;
     }
     return {...s, fare, min, label, detail};
   });
@@ -885,7 +885,11 @@ STEP 3 — Check if the user wants a brand-new route (different origin/destinati
 If yes, extract origin and destination and output ONLY:
 ROUTE_READY: origin="X" destination="Y"
 
-STEP 4 — If you cannot determine origin or destination, ask ONE short question. No bullets. Max 1 sentence.
+STEP 4 — For any normal message shown to the user, reply in TWO short sentences:
+one sentence in English followed by the matching sentence in Filipino/Tagalog.
+If the request is outside Metro Manila commuting, state that you can only help with Metro Manila commutes and ask if the user needs directions somewhere.
+If the user wants directions but you cannot determine the origin or destination, ask for the missing locations.
+Do not apply this bilingual format to the control outputs SHOW_ALTERNATIVES, WEATHER_QUERY, or ROUTE_READY.
 
 Known Manila landmarks:
 - "One Ayala", "Ayala Center", "Glorietta", "Greenbelt" = Makati
@@ -952,7 +956,7 @@ const server = http.createServer(async (req, res) => {
           const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
 
           const intro = await callGemini(NARRATION_PROMPT, introContext, [])
-            .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!`);
+            .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!\nNarito ang ruta mo mula ${resolved.originDisplay} papuntang ${resolved.destinationDisplay}!`);
 
           sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}` });
           return;
@@ -1001,7 +1005,7 @@ const server = http.createServer(async (req, res) => {
             triageReply = `ROUTE_READY: origin="${parsed.origin}" destination="${parsed.destination}"`;
           } else {
             console.warn('TRIAGE UNAVAILABLE:', triageError || 'no response');
-            sendJson(res, 200, { type:'chat', text: `We're having trouble processing your request right now. Please try again.` });
+            sendJson(res, 200, { type:'chat', text: `We're having trouble processing your request right now. Please try again.\nNahihirapan kaming iproseso ang request mo ngayon. Pakisubukan muli.` });
             return;
           }
         }
@@ -1026,14 +1030,14 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (!forecastResult) {
-          sendJson(res, 200, { type:'chat', text: `Sorry, hindi ko makuha ang weather data para sa ${resolvedLocation} ngayon. Try again later!` });
+          sendJson(res, 200, { type:'chat', text: `Sorry, I cannot retrieve weather data for ${resolvedLocation} right now. Please try again later.\nPaumanhin, hindi ko makuha ang datos ng panahon para sa ${resolvedLocation} ngayon. Pakisubukan muli mamaya.` });
           return;
         }
 
         const forecastContext = `Location: ${resolvedLocation}. Time: ${forecastResult.displayTime}. Weather: ${forecastResult.description}, ${forecastResult.temp}°C, humidity ${forecastResult.humidity}%.${forecastResult.isRainy ? ' IT IS RAINY.' : ''}`;
 
         const weatherAnswer = await callGemini(WEATHER_ANSWER_PROMPT, forecastContext, triageHistory)
-          .catch(() => `At ${forecastResult.displayTime} in ${resolvedLocation}: ${forecastResult.description}, ${forecastResult.temp}°C.${forecastResult.isRainy ? ' Magdala ng payong!' : ''}`);
+          .catch(() => `At ${forecastResult.displayTime} in ${resolvedLocation}: ${forecastResult.description}, ${forecastResult.temp}°C.${forecastResult.isRainy ? ' Please bring an umbrella.' : ''}\nSa ${forecastResult.displayTime} sa ${resolvedLocation}: ${forecastResult.description}, ${forecastResult.temp}°C.${forecastResult.isRainy ? ' Magdala ng payong.' : ''}`);
 
         sendJson(res, 200, { type:'chat', text: weatherAnswer.trim() });
         return;
@@ -1076,13 +1080,13 @@ const server = http.createServer(async (req, res) => {
               const introContextAlt = `Alternative route: ${altResolved.originDisplay} to ${altResolved.destinationDisplay}. ${weatherNote}`.trim();
 
               const intro = await callGemini(NARRATION_PROMPT, introContextAlt, triageHistory)
-                .catch(() => `Here's another option for you!`);
+                .catch(() => `Here's another option for you!\nNarito ang isa pang maaari mong daanan!`);
               sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(altJson)}` });
               return;
             }
           }
         }
-        sendJson(res, 200, { type:'chat', text: `Sorry, I do not have another route option for that trip yet.` });
+        sendJson(res, 200, { type:'chat', text: `Sorry, I do not have another route option for that trip yet.\nPaumanhin, wala pa akong ibang opsyon ng ruta para sa biyaheng iyon.` });
         return;
       }
 
@@ -1117,11 +1121,12 @@ const server = http.createServer(async (req, res) => {
         const destinationSuggestion = knownPlaceNames[resolved.destination] || resolved.destination;
         const reply = await callGemini(
           `You are SakayAI. A requested route is not implemented in the current system.
-           Reply using exactly this sentence pattern, replacing only the place values:
+           Reply using exactly these two sentence patterns, replacing only the place values:
            Sorry, I couldn't find a route between ORIGIN and DESTINATION. Are you trying to say 'ORIGIN_SUGGESTION' or 'DESTINATION_SUGGESTION'? I might not support that exact route yet.
+           Paumanhin, hindi ako makahanap ng ruta sa pagitan ng ORIGIN at DESTINATION. Ang ibig mo bang sabihin ay 'ORIGIN_SUGGESTION' o 'DESTINATION_SUGGESTION'? Maaaring hindi ko pa suportado ang eksaktong rutang iyon.
            Do not suggest simpler area names and do not add any other sentence.`,
           `ORIGIN=${resolved.origin}; DESTINATION=${resolved.destination}; ORIGIN_SUGGESTION=${originSuggestion}; DESTINATION_SUGGESTION=${destinationSuggestion}`, triageHistory
-        ).catch(() => `No route found between "${resolved.origin}" and "${resolved.destination}". I might not support that exact route yet.`);
+        ).catch(() => `No route found between "${resolved.origin}" and "${resolved.destination}". I might not support that exact route yet.\nWalang nahanap na ruta sa pagitan ng "${resolved.origin}" at "${resolved.destination}". Maaaring hindi ko pa suportado ang eksaktong rutang iyon.`);
         sendJson(res, 200, { type:'chat', text: reply });
         return;
       }
@@ -1139,14 +1144,15 @@ const server = http.createServer(async (req, res) => {
       const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
 
       const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
-        .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!`);
+        .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!\nNarito ang ruta mo mula ${resolved.originDisplay} papuntang ${resolved.destinationDisplay}!`);
 
       sendJson(res, 200, {
         type: 'route',
         text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}` });
 
     } catch(e) {
-      sendJson(res, 500, { error: e.message||'Server error' });
+      console.error('REQUEST ERROR:', e.message || e);
+      sendJson(res, 500, { error: `We're having trouble processing your request right now. Please try again.\nNahihirapan kaming iproseso ang request mo ngayon. Pakisubukan muli.` });
     }
     return;
   }
