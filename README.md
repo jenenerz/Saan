@@ -7,6 +7,7 @@ The app has a single-page frontend in `index.html` and a Node.js backend in `ser
 ## Features
 
 - Simple chat-style commute planner
+- Name-entry welcome screen before opening the planner
 - Example route buttons on the home screen
 - Local route matching for known Metro Manila areas and landmarks
 - Route cards with step-by-step commute instructions
@@ -68,6 +69,7 @@ The backend serves `index.html` directly, so there is no separate frontend dev s
 ```text
 .
 |-- index.html          # Frontend UI, styles, and browser-side JavaScript
+|-- assets/             # Landing-page illustration asset
 |-- server.js           # Node.js server, route data, routing logic, API handler
 |-- package.json        # Project metadata and npm scripts
 |-- package-lock.json   # Locked npm dependency versions

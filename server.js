@@ -6,7 +6,8 @@ require('dotenv').config();
 
 const MIME = {
   '.html': 'text/html', '.js': 'application/javascript',
-  '.css': 'text/css', '.json': 'application/json', '.ico': 'image/x-icon'
+  '.css': 'text/css', '.json': 'application/json', '.ico': 'image/x-icon',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp'
 };
 
 const DB = {
