@@ -123,7 +123,7 @@ The server then:
 - Parses route requests when possible
 - Resolves aliases like `moa`, `bgc`, `cubao`, `makati`, and similar names
 - Builds possible paths from local route data
-- Reads fare/time details for each path
+- Reads fare/time details for supported paths where stored
 - Picks a route from the available paths
 - Builds route JSON for the frontend route card
 - Calls Gemini to write a short friendly intro when needed
@@ -131,13 +131,13 @@ The server then:
 
 The route data is stored directly in `server.js`, not in a database.
 
-UV Express routes in the current data set use terminal pairs and listed fares reported by The Poor Traveler from an LTFRB list dated November 23, 2020. The app marks these as reference fares because they are not live fare data. Moovit lists UV Express services in Manila, but live schedules and fare updates are not integrated into this project.
+UV Express routes in the current data set keep terminal pairs from the supplied route references. Individual UV fares are intentionally not stored or returned because the available published fare figures are outdated. The sidebar includes a `PHP 60-100` guide range requested for orientation, and the route output tells users to verify the current fare at the terminal.
 
 ## Known Limitations
 
 - Route coverage is limited to the areas and routes manually listed in `server.js`.
 - Fare and travel time data are hardcoded, so they can become outdated.
-- UV Express fare references are based on a November 2020 route list and should be checked before travel.
+- UV Express routes do not provide stored per-trip fares; users must confirm the current fare at the terminal.
 - The app needs `GEMINI_API_KEY` for the full chat experience.
 - Weather depends on OpenWeatherMap and may fail if the API key is missing or the request times out.
 - There is no user login, saved history, or database.

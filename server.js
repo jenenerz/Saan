@@ -92,29 +92,29 @@ const DB = {
     minPerStop:3
   },
 
-  // UV Express fares are reference values from an LTFRB route list reported on
-  // The Poor Traveler (published Nov. 29, 2020; routes listed as of Nov. 23, 2020).
-  // Moovit also lists UV services in Manila, but its public page does not provide fares.
+  // UV Express terminal pairs retained from the route references supplied for
+  // this project. Fare values are intentionally not stored because the
+  // available published values are outdated and should not guide current trips.
   uvExpress: [
-    { from:"Paranaque",   to:"Makati",     service:"BF Paranaque - Ayala Center",                 fare:40 },
-    { from:"Paranaque",   to:"Manila",     service:"Sucat (Paranaque) - Lawton (Park N Ride)",    fare:40 },
-    { from:"Las Pinas",   to:"Quiapo",     service:"SM South Mall - Quiapo",                      fare:57 },
-    { from:"Makati",      to:"Ortigas",    service:"Comembo - SM Megamall",                       fare:11 },
-    { from:"Marikina",    to:"Cubao",      service:"Brgy. Fortune (Marikina City) - Cubao",       fare:21 },
-    { from:"Marikina",    to:"Makati",     service:"Sto. Nino (Marikina) - Ayala",                fare:38 },
-    { from:"Marikina",    to:"Ortigas",    service:"Sto. Nino (Marikina) - Ortigas Center",       fare:24 },
-    { from:"Novaliches",  to:"Quiapo",     service:"Lagro - Quiapo via Sauyo",                    fare:46 },
-    { from:"Novaliches",  to:"Cubao",      service:"Novaliches - Cubao Farmers Market",           fare:37 },
-    { from:"Novaliches",  to:"Monumento",  service:"Novaliches - Monumento",                      fare:24 },
-    { from:"Novaliches",  to:"Buendia",    service:"Robinson's Place Novaliches - Buendia",       fare:55 },
-    { from:"BGC",         to:"Ortigas",    service:"Market Market - Pasig via San Joaquin",       fare:6  },
-    { from:"SM North",    to:"Novaliches", service:"SM North EDSA - SM Fairview",                 fare:30 },
-    { from:"SM North",    to:"Manila",     service:"SM North C.I.T. - T.M. Kalaw",                fare:21 },
-    { from:"Cubao",       to:"Buendia",    service:"Cubao - Buendia",                             fare:28 },
-    { from:"Bicutan",     to:"Makati",     service:"SM Bicutan Terminal - SM Makati",             fare:24 },
-    { from:"Antipolo",    to:"Cubao",      service:"Cogeo - Cubao via Marcos Highway",            fare:28 },
-    { from:"Antipolo",    to:"Ortigas",    service:"Antipolo - SM Megamall",                      fare:29 },
-    { from:"Antipolo",    to:"Makati",     service:"Antipolo - Ayala",                            fare:40 }
+    { from:"Paranaque",   to:"Makati",     service:"BF Paranaque - Ayala Center" },
+    { from:"Paranaque",   to:"Manila",     service:"Sucat (Paranaque) - Lawton (Park N Ride)" },
+    { from:"Las Pinas",   to:"Quiapo",     service:"SM South Mall - Quiapo" },
+    { from:"Makati",      to:"Ortigas",    service:"Comembo - SM Megamall" },
+    { from:"Marikina",    to:"Cubao",      service:"Brgy. Fortune (Marikina City) - Cubao" },
+    { from:"Marikina",    to:"Makati",     service:"Sto. Nino (Marikina) - Ayala" },
+    { from:"Marikina",    to:"Ortigas",    service:"Sto. Nino (Marikina) - Ortigas Center" },
+    { from:"Novaliches",  to:"Quiapo",     service:"Lagro - Quiapo via Sauyo" },
+    { from:"Novaliches",  to:"Cubao",      service:"Novaliches - Cubao Farmers Market" },
+    { from:"Novaliches",  to:"Monumento",  service:"Novaliches - Monumento" },
+    { from:"Novaliches",  to:"Buendia",    service:"Robinson's Place Novaliches - Buendia" },
+    { from:"BGC",         to:"Ortigas",    service:"Market Market - Pasig via San Joaquin" },
+    { from:"SM North",    to:"Novaliches", service:"SM North EDSA - SM Fairview" },
+    { from:"SM North",    to:"Manila",     service:"SM North C.I.T. - T.M. Kalaw" },
+    { from:"Cubao",       to:"Buendia",    service:"Cubao - Buendia" },
+    { from:"Bicutan",     to:"Makati",     service:"SM Bicutan Terminal - SM Makati" },
+    { from:"Antipolo",    to:"Cubao",      service:"Cogeo - Cubao via Marcos Highway" },
+    { from:"Antipolo",    to:"Ortigas",    service:"Antipolo - SM Megamall" },
+    { from:"Antipolo",    to:"Makati",     service:"Antipolo - Ayala" }
   ],
 
   // One Ayala Terminal routes transcribed from the Sakay.ph terminal guide
@@ -409,7 +409,8 @@ function listPaths(resolved) {
     return paths;
   }
 
-  // Direct UV Express routes use listed terminal-to-terminal fares only.
+  // Direct UV Express routes provide terminal-to-terminal service only; fares
+  // must be verified at the terminal because current values are not stored.
   // No duration is assigned because the supplied sources do not publish one here.
   const uvMatch = DB.uvExpress.find(r =>
     (r.from === origin && r.to === destination) ||
@@ -424,7 +425,7 @@ function listPaths(resolved) {
         mode:'uv',
         from: originDisplay,
         to: destinationDisplay,
-        fare: uvMatch.fare,
+        fare: null,
         service: uvMatch.service
       }],
       transfers:0
@@ -605,10 +606,10 @@ function readPath(p, isPeak) {
       label=`Walk: ${s.from} → ${s.to}`;
       detail=s.note||`Walk from ${s.from} to ${s.to}`;
     } else if (s.mode==='uv') {
-      fare=s.fare||0;
+      fare=null;
       min=null;
       label=`UV Express: ${s.service}`;
-      detail=`Terminal route for ${s.from} to ${s.to} | Listed fare: PHP ${fare} (Nov. 2020 reference; verify current fare before riding) | No travel-time estimate stored`;
+      detail=`Terminal route for ${s.from} to ${s.to} | Fare not stored; verify current fare at the terminal | No travel-time estimate stored`;
     } else if (s.mode==='ayala_bus' || s.mode==='ayala_p2p' || s.mode==='ayala_uv') {
       fare=null;
       min=null;
