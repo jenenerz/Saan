@@ -18,7 +18,9 @@ const DB = {
     "alabang":"Alabang","starmall":"Alabang","muntinlupa":"Alabang","vtx":"Alabang",
     "bicutan":"Bicutan","sm bicutan":"Bicutan","sm bicutan terminal":"Bicutan","ftf":"Bicutan","fti":"Bicutan",
     "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
-    "pasay":"Pasay","baclaran":"Baclaran","pitx":"PITX",
+    "pasay":"Pasay","pasay rotonda":"Pasay","rotonda":"Pasay","taft avenue station":"Pasay","mrt 3 taft avenue station":"Pasay","baclaran":"Baclaran","pitx":"PITX",
+    "bacoor":"Bacoor","bacoor cavite":"Bacoor","sm bacoor":"Bacoor",
+    "dasma":"Dasmarinas","dasmarinas":"Dasmarinas","dasmariñas":"Dasmarinas","dasmarias":"Dasmarinas","dasmarinas cavite":"Dasmarinas",
     "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
     "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
     "makati":"Makati","ayala":"Makati","ayala center":"Makati","sm makati":"Makati","comembo":"Makati","pembo":"Makati","glorietta":"Makati","greenbelt":"Makati",
@@ -53,6 +55,8 @@ const DB = {
     "Pasay":       { hub:"Baclaran",        hubLine:"LRT-1", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "MOA":         { hub:"MOA",             hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "PITX":        { hub:"PITX",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Bacoor":      { hub:"Bacoor",          hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
+    "Dasmarinas":  { hub:"Dasmarinas",      hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "NAIA":        { hub:"NAIA",            hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Makati":      { hub:"Ayala",           hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
     "Buendia":     { hub:"Buendia",         hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
@@ -117,6 +121,85 @@ const DB = {
     { from:"Antipolo",    to:"Makati",     service:"Antipolo - Ayala" }
   ],
 
+  // Cavite route guidance supplied for the project. No fares, schedules, or
+  // durations are stored; riders should confirm signboards and stops onsite.
+  caviteRoutes: [
+    {
+      from:"Pasay", to:"Bacoor", id:"PASAY_ROTONDA_BACOOR_BUS",
+      segments:[{
+        mode:"guided_bus",
+        label:"Bus: Pasay Rotonda / Taft Avenue Station to Bacoor, Cavite",
+        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip stops in Bacoor before boarding."
+      }]
+    },
+    {
+      from:"Pasay", to:"Bacoor", id:"PASAY_MOA_BACOOR_UV",
+      segments:[
+        {
+          mode:"guided_jeep",
+          label:"Jeepney: Pasay Rotonda / Taft Avenue Station to MOA",
+          detail:"From Pasay Rotonda or Taft Avenue Station, ride a jeepney bound for MOA."
+        },
+        {
+          mode:"guided_uv",
+          label:"UV Express: MOA to Bacoor, Cavite",
+          detail:"At MOA, look for a UV Express with signboards such as Molino Blvd, SM Bacoor, or Soldiers. Fare not stored; verify current fare before riding."
+        }
+      ]
+    },
+    {
+      from:"Pasay", to:"Bacoor", id:"PASAY_MOA_PITX_BACOOR_BUS",
+      segments:[
+        {
+          mode:"guided_jeep",
+          label:"Jeepney: Pasay Rotonda / Taft Avenue Station to MOA",
+          detail:"From Pasay Rotonda or Taft Avenue Station, ride a jeepney bound for MOA."
+        },
+        {
+          mode:"guided_bus",
+          label:"EDSA Carousel: MOA to PITX",
+          detail:"From MOA, ride the EDSA Carousel southbound to PITX."
+        },
+        {
+          mode:"guided_bus",
+          label:"Bus: PITX to Bacoor, Cavite",
+          detail:"At PITX, transfer to a bus going to Bacoor. Confirm the bay and destination signboard before boarding."
+        }
+      ]
+    },
+    {
+      from:"MOA", to:"Bacoor", id:"MOA_BACOOR_UV",
+      segments:[{
+        mode:"guided_uv",
+        label:"UV Express: MOA to Bacoor, Cavite",
+        detail:"At MOA, look for a UV Express with signboards such as Molino Blvd, SM Bacoor, or Soldiers. Fare not stored; verify current fare before riding."
+      }]
+    },
+    {
+      from:"MOA", to:"Bacoor", id:"MOA_PITX_BACOOR_BUS",
+      segments:[
+        {
+          mode:"guided_bus",
+          label:"EDSA Carousel: MOA to PITX",
+          detail:"From MOA, ride the EDSA Carousel southbound to PITX."
+        },
+        {
+          mode:"guided_bus",
+          label:"Bus: PITX to Bacoor, Cavite",
+          detail:"At PITX, transfer to a bus going to Bacoor. Confirm the bay and destination signboard before boarding."
+        }
+      ]
+    },
+    {
+      from:"Pasay", to:"Dasmarinas", id:"PASAY_ROTONDA_DASMARINAS_BUS",
+      segments:[{
+        mode:"guided_bus",
+        label:"Bus: Pasay Rotonda / Taft Avenue Station to Dasmarinas, Cavite",
+        detail:"Board at the bus terminal near MRT-3 Taft Avenue Station in Pasay Rotonda and look for a Tagaytay-bound bus. Confirm with terminal staff or the conductor that the trip serves Dasmarinas before boarding."
+      }]
+    }
+  ],
+
   // One Ayala Terminal routes transcribed from the Sakay.ph terminal guide
   // supplied with this project update. Fare and trip duration are not listed
   // in the supplied tables, so this data stores schedule and stops only.
@@ -179,6 +262,8 @@ const WEATHER_CITY_MAP = {
   "Pasay":       "Pasay",
   "MOA":         "Pasay",
   "PITX":        "Paranaque City",
+  "Bacoor":      "Bacoor",
+  "Dasmarinas":  "Dasmarinas",
   "NAIA":        "Pasay",
   "Makati":      "Makati",
   "Buendia":     "Makati",
@@ -358,10 +443,17 @@ function resolveLocations(originRaw, destinationRaw) {
   };
   const origin      = normalize(originRaw);
   const destination = normalize(destinationRaw);
+  let originDisplay = displayName(originRaw, origin);
+  let destinationDisplay = displayName(destinationRaw, destination);
+  if (origin === 'Pasay' && ['Bacoor', 'Dasmarinas'].includes(destination)) {
+    originDisplay = 'Pasay Rotonda';
+  }
+  if (destination === 'Bacoor') destinationDisplay = 'Bacoor, Cavite';
+  if (destination === 'Dasmarinas') destinationDisplay = 'Dasmarinas, Cavite';
   return {
     originRaw, destinationRaw, origin, destination,
-    originDisplay: displayName(originRaw, origin),
-    destinationDisplay: displayName(destinationRaw, destination),
+    originDisplay,
+    destinationDisplay,
     originKnown: !!DB.areas[origin],
     destKnown:   !!DB.areas[destination],
     originArea:  DB.areas[origin]      || null,
@@ -379,6 +471,19 @@ function listPaths(resolved) {
       s.toLowerCase().includes(hub.toLowerCase()) ||
       hub.toLowerCase().includes(s.toLowerCase().split(' ')[0])
     );
+
+  const caviteServices = DB.caviteRoutes.filter(route =>
+    route.from === origin && route.to === destination
+  );
+  if (caviteServices.length > 0) {
+    return caviteServices.map(route => ({
+      id: route.id,
+      type: 'cavite_guidance',
+      description: route.segments.map(segment => segment.label).join(' + '),
+      segments: route.segments,
+      transfers: Math.max(0, route.segments.length - 1)
+    }));
+  }
 
   // ── P2P bus routes (bidirectional, single best match) ──
   if (originDisplay === 'One Ayala Terminal') {
@@ -610,6 +715,11 @@ function readPath(p, isPeak) {
       min=null;
       label=`UV Express: ${s.service}`;
       detail=`Terminal route for ${s.from} to ${s.to} | Fare not stored; verify current fare at the terminal | No travel-time estimate stored`;
+    } else if (s.mode==='guided_bus' || s.mode==='guided_uv' || s.mode==='guided_jeep') {
+      fare=null;
+      min=null;
+      label=s.label;
+      detail=s.detail;
     } else if (s.mode==='ayala_bus' || s.mode==='ayala_p2p' || s.mode==='ayala_uv') {
       fare=null;
       min=null;
@@ -678,10 +788,10 @@ function buildRouteJson(context, origin, destination) {
     steps: rec.segments.map(s => ({
       type: s.mode==='MRT-3'   ? 'mrt'  :
             s.mode==='LRT-1' || s.mode==='LRT-2' ? 'lrt' :
-            s.mode==='uv' || s.mode==='ayala_uv' ? 'uv' :
-            s.mode==='ayala_bus' || s.mode==='ayala_p2p' ? 'bus' :
+            s.mode==='uv' || s.mode==='ayala_uv' || s.mode==='guided_uv' ? 'uv' :
+            s.mode==='ayala_bus' || s.mode==='ayala_p2p' || s.mode==='guided_bus' ? 'bus' :
             s.mode==='p2p'   ? 'bus'  :
-            s.mode==='jeepney' ? 'jeep' :
+            s.mode==='jeepney' || s.mode==='guided_jeep' ? 'jeep' :
             s.mode==='walk'  ? 'walk' : 'walk',
       label: s.label,
       detail: s.detail,
@@ -781,6 +891,9 @@ Known Manila landmarks:
 - "One Ayala", "Ayala Center", "Glorietta", "Greenbelt" = Makati
 - "MOA", "Mall of Asia", "SM MOA" = MOA
 - "BGC", "Bonifacio", "Fort" = BGC
+- "Pasay", "Pasay Rotonda", "Taft Avenue Station" = Pasay Rotonda for Cavite-bound routes
+- "Bacoor", "SM Bacoor" = Bacoor, Cavite
+- "Dasma", "Dasmarinas" = Dasmarinas, Cavite
 - "DLSU", "Taft Ave", "Vito Cruz" = Taft area`;
 
 const WEATHER_ANSWER_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
@@ -868,7 +981,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       // Pre-check: detect follow-up intent WITHOUT calling Gemini
-      const isFollowUpIntent = /more options?|other options?|alternative|another (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(message);
+      const isFollowUpIntent = /more options?|other options?|alternative|another (way|route|option)|different (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(message);
 
       let triageReply = null;
       let triageError = null;
@@ -927,17 +1040,31 @@ const server = http.createServer(async (req, res) => {
 
       // ── Handle SHOW_ALTERNATIVES ──
       if (/SHOW_ALTERNATIVES/i.test(triageReply)) {
-        const historyText = [...history].map(m => m.text||m.parts?.[0]?.text||'').join('\n');
-        const prevRoute = historyText.match(/([\w\s]+?)\s*→\s*([\w\s]+?)(?:\n|\\n|$)/m);
+        const historyMessages = history.map(m => m.text||m.parts?.[0]?.text||'');
+        const userHistoryMessages = history
+          .filter(m => m.role === 'user')
+          .map(m => m.text||m.parts?.[0]?.text||'');
+        const previousRequest = [...userHistoryMessages].reverse()
+          .map(text => parseUserInput(text))
+          .find(parsed => parsed.origin && parsed.destination);
+        const historyText = historyMessages.join('\n');
+        const prevRoute = historyText.match(/([^\n]+?)\s*→\s*([^\n]+?)(?:\n|\\n|$)/m);
+        const altResolved = previousRequest
+          ? resolveLocations(previousRequest.origin, previousRequest.destination)
+          : prevRoute
+            ? resolveLocations(prevRoute[1].trim(), prevRoute[2].trim())
+            : null;
 
-        if (prevRoute) {
-          const altResolved = resolveLocations(prevRoute[1].trim(), prevRoute[2].trim());
+        if (altResolved) {
           const altPaths = listPaths(altResolved);
           if (altPaths.length > 1) {
             const fullContext = [...history.map(m => m.text||''), message].join(' ');
             const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
             const readPaths = altPaths.map(p => readPath(p, isPeak));
-            const alts = readPaths.slice(1);
+            const priorAlternativeRequests = userHistoryMessages.filter(text =>
+              /more options?|other options?|alternative|another (way|route|option)|different (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i.test(text)
+            ).length;
+            const alts = readPaths.slice(priorAlternativeRequests + 1);
             if (alts.length > 0) {
               const altContext = getContext(alts);
               const altJson = buildRouteJson(altContext, altResolved.originDisplay, altResolved.destinationDisplay);

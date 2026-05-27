@@ -133,6 +133,8 @@ The route data is stored directly in `server.js`, not in a database.
 
 UV Express routes in the current data set keep terminal pairs from the supplied route references. Individual UV fares are intentionally not stored or returned because the available published fare figures are outdated. The sidebar includes a `PHP 60-100` guide range requested for orientation, and the route output tells users to verify the current fare at the terminal.
 
+The local route data also includes guided Cavite-bound options from Pasay Rotonda and MOA to Bacoor, plus a Pasay Rotonda to Dasmarinas bus option. These paths give boarding points, transfers, and signboard guidance only; fare, schedule, and travel-time details are not stored.
+
 ## Known Limitations
 
 - Route coverage is limited to the areas and routes manually listed in `server.js`.
