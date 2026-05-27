@@ -144,7 +144,7 @@ Arca South terminal services and the Manila/Guadalupe-to-FTI guidance are also s
 
 EDSA Carousel stops are stored separately for southbound (`Monumento` to `PITX`) and northbound (`PITX` to `Monumento`) trips. The engine chooses a direction from the stop order, accepts common stop aliases such as `MOA`, `FPJ Station`, `Taft`, and `North Ave`, and includes nearby MRT/LRT connections at the trip endpoints. A full stop list can be requested in chat using a question such as `full EDSA Carousel route`.
 
-Premium P2P routes are stored separately from regular bus routes. Direct P2P matches use their terminal names and operator names, including common inputs such as `ATC`, `One Ayala`, `Market Market`, `PITX`, and city-based searches such as `Makati to Alabang`. Routes are treated as bidirectional only where stored that way; the Greenbelt-to-Batangas and Greenbelt-to-Lipa entries are one-way in the current data. Since fares and schedules were not supplied, the app tells riders to verify them with the terminal or operator.
+Premium P2P routes are stored separately from regular bus routes. Direct P2P matches use their terminal names and operator names, including common inputs such as `ATC`, `One Ayala`, `Market Market`, `PITX`, and city-based searches such as `Makati to Alabang`. Routes are treated as bidirectional only where stored that way; the Greenbelt-to-Batangas and Greenbelt-to-Lipa entries are one-way in the current data. The sidebar includes a `PHP 50-180` P2P guide range, but per-route fares and schedules are not stored, so the app tells riders to verify them with the terminal or operator.
 
 ## Known Limitations
 
