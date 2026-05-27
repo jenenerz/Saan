@@ -1000,7 +1000,8 @@ const server = http.createServer(async (req, res) => {
           if (parsed.origin && parsed.destination) {
             triageReply = `ROUTE_READY: origin="${parsed.origin}" destination="${parsed.destination}"`;
           } else {
-            sendJson(res, 200, { type:'chat', text: `Saan ka galing at saan ka pupunta? (Error: ${triageError||'no response'})` });
+            console.warn('TRIAGE UNAVAILABLE:', triageError || 'no response');
+            sendJson(res, 200, { type:'chat', text: `We're having trouble processing your request right now. Please try again.` });
             return;
           }
         }
