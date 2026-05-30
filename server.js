@@ -21,6 +21,7 @@ function loadReferenceKnowledge() {
 }
 
 const REFERENCE_KNOWLEDGE = loadReferenceKnowledge();
+const NOMINATIM_USER_AGENT = 'SaanPH/1.0';
 
 const DB = {
   aliases: {
@@ -1644,6 +1645,55 @@ function completeRouteFromConversation(message, history = []) {
   return null;
 }
 
+function selectRuntimeTool(message, history = []) {
+  const premiumP2PList = buildPremiumP2PListReply(message);
+  if (premiumP2PList) {
+    return { type: 'chat_reply', tool: 'premium_p2p_lister', text: premiumP2PList };
+  }
+
+  const carouselRouteList = buildCarouselRouteListReply(message);
+  if (carouselRouteList) {
+    return { type: 'chat_reply', tool: 'carousel_stop_lister', text: carouselRouteList };
+  }
+
+  const referenceReply = buildReferenceKnowledgeReply(message);
+  if (referenceReply) {
+    return { type: 'chat_reply', tool: 'reference_knowledge_lookup', text: referenceReply };
+  }
+
+  if (ALTERNATIVE_INTENT_RE.test(message)) {
+    return { type: 'show_alternatives', tool: 'alternative_route_memory' };
+  }
+
+  const directRoute = parseUserInput(message);
+  if (directRoute.origin && directRoute.destination) {
+    return {
+      type: 'route_planner',
+      tool: 'direct_route_planner',
+      tools: ['nominatim_location_lookup', 'direct_route_planner'],
+      route: directRoute
+    };
+  }
+
+  const completedFromMemory = completeRouteFromConversation(message, history);
+  if (completedFromMemory?.origin && completedFromMemory?.destination) {
+    return {
+      type: 'route_planner',
+      tool: 'memory_completed_route_planner',
+      tools: ['nominatim_location_lookup', 'memory_completed_route_planner'],
+      route: completedFromMemory
+    };
+  }
+
+  const partialRoute = parsePartialRouteInput(message);
+  const missingDetailReply = buildMissingDetailReply(partialRoute);
+  if (missingDetailReply) {
+    return { type: 'clarification', tool: 'missing_trip_detail_clarifier', text: missingDetailReply };
+  }
+
+  return { type: 'gemini_triage', tool: 'gemini_intent_triage' };
+}
+
 const ALTERNATIVE_INTENT_RE = /more options?|other options?|alternative|another (way|route|option)|second (way|route|option)|different (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i;
 
 function parseAlternativeTarget(message) {
@@ -1812,6 +1862,117 @@ function buildWeatherNote(weather) {
   return `Weather at destination: ${weather.description}, ${weather.temp}°C, humidity ${weather.humidity}%.${weather.isRainy ? ' IT IS CURRENTLY RAINING.' : ''}`;
 }
 
+function getGeneralAreaFromNominatim(place) {
+  const address = place?.address || {};
+  return address.city || address.town || address.municipality || address.county ||
+    address.state_district || address.state || address.region || '';
+}
+
+function lookupNominatimPlace(placeName) {
+  return new Promise((resolve) => {
+    const query = String(placeName || '').trim();
+    if (!query) {
+      resolve(null);
+      return;
+    }
+
+    const requestPath = `/search?q=${encodeURIComponent(query)}&format=json&countrycodes=ph&addressdetails=1&limit=1`;
+    const req = https.request({
+      hostname: 'nominatim.openstreetmap.org',
+      path: requestPath,
+      method: 'GET',
+      headers: {
+        'User-Agent': NOMINATIM_USER_AGENT,
+        'Accept': 'application/json'
+      }
+    }, res => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          if (res.statusCode !== 200) {
+            resolve(null);
+            return;
+          }
+          const results = JSON.parse(data);
+          const place = Array.isArray(results) ? results[0] : null;
+          if (!place) {
+            resolve(null);
+            return;
+          }
+          resolve({
+            input: query,
+            officialName: place.display_name || query,
+            generalArea: getGeneralAreaFromNominatim(place),
+            lat: place.lat || null,
+            lon: place.lon || null,
+            type: place.type || '',
+            category: place.class || ''
+          });
+        } catch (error) {
+          resolve(null);
+        }
+      });
+    });
+
+    req.setTimeout(7000, () => {
+      req.destroy();
+      resolve(null);
+    });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+async function validateResolvedLocations(resolved) {
+  console.log('SELECTED TOOL: nominatim_location_lookup');
+  const originQuery = resolved.originRaw || resolved.originDisplay || resolved.origin;
+  const destinationQuery = resolved.destinationRaw || resolved.destinationDisplay || resolved.destination;
+  const [origin, destination] = await Promise.all([
+    lookupNominatimPlace(originQuery),
+    lookupNominatimPlace(destinationQuery)
+  ]);
+  return { origin, destination };
+}
+
+function applyLocationValidation(routeJson, validation) {
+  if (!routeJson) return routeJson;
+  const verified = {};
+  if (validation?.origin?.officialName) {
+    verified.origin = {
+      name: validation.origin.officialName,
+      area: validation.origin.generalArea || ''
+    };
+  }
+  if (validation?.destination?.officialName) {
+    verified.destination = {
+      name: validation.destination.officialName,
+      area: validation.destination.generalArea || ''
+    };
+  }
+  return Object.keys(verified).length ? { ...routeJson, verifiedLocations: verified } : routeJson;
+}
+
+function buildUnsupportedRouteWithValidation(resolved, validation) {
+  const originName = validation?.origin?.officialName || resolved.originDisplay || resolved.origin;
+  const destinationName = validation?.destination?.officialName || resolved.destinationDisplay || resolved.destination;
+  const originArea = validation?.origin?.generalArea ? ` (${validation.origin.generalArea})` : '';
+  const destinationArea = validation?.destination?.generalArea ? ` (${validation.destination.generalArea})` : '';
+  const originStatus = validation?.origin
+    ? `I found the origin as ${originName}${originArea}.`
+    : `I could not confirm the origin "${resolved.originDisplay || resolved.origin}" in OpenStreetMap.`;
+  const destinationStatus = validation?.destination
+    ? `I found the destination as ${destinationName}${destinationArea}.`
+    : `I could not confirm the destination "${resolved.destinationDisplay || resolved.destination}" in OpenStreetMap.`;
+  const originStatusTl = validation?.origin
+    ? `Nahanap ko ang pinanggalingan bilang ${originName}${originArea}.`
+    : `Hindi ko makumpirma ang pinanggalingan na "${resolved.originDisplay || resolved.origin}" sa OpenStreetMap.`;
+  const destinationStatusTl = validation?.destination
+    ? `Nahanap ko ang destinasyon bilang ${destinationName}${destinationArea}.`
+    : `Hindi ko makumpirma ang destinasyon na "${resolved.destinationDisplay || resolved.destination}" sa OpenStreetMap.`;
+  return `${originStatus} ${destinationStatus} I do not have a stored commute route between these places yet.\n${originStatusTl} ${destinationStatusTl} Wala pa akong naka-save na commute route sa pagitan ng mga lugar na ito.`;
+}
+
 function buildForecastAnswer(location, forecast) {
   const englishDate = /^(today|tomorrow),/.test(forecast.displayDate)
     ? forecast.displayDate
@@ -1850,41 +2011,32 @@ const server = http.createServer(async (req, res) => {
     try {
       const { message, history=[] } = await readBody(req);
 
-      const premiumP2PList = buildPremiumP2PListReply(message);
-      if (premiumP2PList) {
-        sendJson(res, 200, { type:'chat', text: premiumP2PList });
-        return;
-      }
+      const selectedTool = selectRuntimeTool(message, history);
+      console.log('SELECTED TOOL:', selectedTool.tool);
 
-      const carouselRouteList = buildCarouselRouteListReply(message);
-      if (carouselRouteList) {
-        sendJson(res, 200, { type:'chat', text: carouselRouteList });
-        return;
-      }
-
-      const referenceReply = buildReferenceKnowledgeReply(message);
-      if (referenceReply) {
-        sendJson(res, 200, { type:'chat', text: referenceReply });
+      if (selectedTool.type === 'chat_reply' || selectedTool.type === 'clarification') {
+        sendJson(res, 200, { type:'chat', text: selectedTool.text });
         return;
       }
 
       // Direct route requests should use stored routes before AI triage, including in ongoing chats.
       // Alternative requests are handled from history below so named trips can select their second path.
-      const isFollowUpIntent = ALTERNATIVE_INTENT_RE.test(message);
-      const completedFromMemory = isFollowUpIntent ? null : completeRouteFromConversation(message, history);
-      const quickParse = isFollowUpIntent
-        ? { origin: null, destination: null }
-        : completedFromMemory || parseUserInput(message);
+      const isFollowUpIntent = selectedTool.type === 'show_alternatives';
+      const quickParse = selectedTool.type === 'route_planner'
+        ? selectedTool.route
+        : { origin: null, destination: null };
 
       if (quickParse.origin && quickParse.destination) {
         const resolved = resolveLocations(quickParse.origin, quickParse.destination);
+        const locationValidation = await validateResolvedLocations(resolved);
         const paths = getAutonomousCandidatePaths(resolved);
         if (paths.length > 0) {
           const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(message.toLowerCase());
           const readPaths = paths.map(p => readPath(p, isPeak));
           const context = getContext(readPaths);
           const evidence = retrieveRouteEvidence(resolved, readPaths, message);
-          const routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
+          let routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
+          routeJson = applyLocationValidation(routeJson, locationValidation);
 
           const weather = await getWeather(resolved.destination);
 
@@ -1898,16 +2050,11 @@ const server = http.createServer(async (req, res) => {
           sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}${buildEvidenceNote(evidence)}` });
           return;
         }
-      }
-
-      // ── Triage via Gemini ──
-      const partialRoute = parsePartialRouteInput(message);
-      const missingDetailReply = buildMissingDetailReply(partialRoute);
-      if (missingDetailReply) {
-        sendJson(res, 200, { type:'chat', text: missingDetailReply });
+        sendJson(res, 200, { type:'chat', text: buildUnsupportedRouteWithValidation(resolved, locationValidation) });
         return;
       }
 
+      // ── Triage via Gemini ──
       const rawHistory = history
         .filter(m => m.role && (m.text || m.parts?.[0]?.text))
         .map(m => ({
@@ -2021,6 +2168,7 @@ const server = http.createServer(async (req, res) => {
             : null;
 
         if (altResolved) {
+          const locationValidation = await validateResolvedLocations(altResolved);
           const altPaths = getAutonomousCandidatePaths(altResolved);
           if (altPaths.length > 1) {
             const fullContext = [...history.map(m => m.text||''), message].join(' ');
@@ -2037,7 +2185,8 @@ const server = http.createServer(async (req, res) => {
             if (alts.length > 0) {
               const altContext = getContext(alts);
               const evidence = retrieveRouteEvidence(altResolved, alts, message);
-              const altJson = buildRouteJson(altContext, altResolved.originDisplay, altResolved.destinationDisplay);
+              let altJson = buildRouteJson(altContext, altResolved.originDisplay, altResolved.destinationDisplay);
+              altJson = applyLocationValidation(altJson, locationValidation);
 
               const weather = await getWeather(altResolved.destination);
 
@@ -2071,29 +2220,13 @@ const server = http.createServer(async (req, res) => {
       const isPeak  = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
 
       const resolved = resolveLocations(extractedOrigin, extractedDest);
+      const locationValidation = await validateResolvedLocations(resolved);
 
       const paths = getAutonomousCandidatePaths(resolved);
       console.log('ROUTE PATHS:', paths.map(p => p.description));
 
       if (paths.length === 0) {
-        const knownPlaceNames = {
-          MOA: 'Mall of Asia (MOA)',
-          PITX: 'PITX',
-          BGC: 'BGC',
-          Bacoor: 'Bacoor',
-          Dasmarinas: 'Dasmarinas'
-        };
-        const originSuggestion = knownPlaceNames[resolved.origin] || resolved.origin;
-        const destinationSuggestion = knownPlaceNames[resolved.destination] || resolved.destination;
-        const reply = await callGemini(
-          `You are SakayAI. A requested route is not implemented in the current system.
-           Reply using exactly these two sentence patterns, replacing only the place values:
-           Sorry, I couldn't find a route between ORIGIN and DESTINATION. Are you trying to say 'ORIGIN_SUGGESTION' or 'DESTINATION_SUGGESTION'? I might not support that exact route yet.
-           Paumanhin, hindi ako makahanap ng ruta sa pagitan ng ORIGIN at DESTINATION. Ang ibig mo bang sabihin ay 'ORIGIN_SUGGESTION' o 'DESTINATION_SUGGESTION'? Maaaring hindi ko pa suportado ang eksaktong rutang iyon.
-           Do not suggest simpler area names and do not add any other sentence.`,
-          `ORIGIN=${resolved.origin}; DESTINATION=${resolved.destination}; ORIGIN_SUGGESTION=${originSuggestion}; DESTINATION_SUGGESTION=${destinationSuggestion}`, triageHistory
-        ).catch(() => `No route found between "${resolved.origin}" and "${resolved.destination}". I might not support that exact route yet.\nWalang nahanap na ruta sa pagitan ng "${resolved.origin}" at "${resolved.destination}". Maaaring hindi ko pa suportado ang eksaktong rutang iyon.`);
-        sendJson(res, 200, { type:'chat', text: reply });
+        sendJson(res, 200, { type:'chat', text: buildUnsupportedRouteWithValidation(resolved, locationValidation) });
         return;
       }
 
@@ -2103,7 +2236,8 @@ const server = http.createServer(async (req, res) => {
       const context = getContext(readPaths);
       const evidence = retrieveRouteEvidence(resolved, readPaths, message);
 
-      const routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
+      let routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
+      routeJson = applyLocationValidation(routeJson, locationValidation);
 
       const weather = await getWeather(resolved.destination);
 

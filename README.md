@@ -34,6 +34,7 @@ The app has a single-page frontend in `index.html` and a Node.js backend in `ser
 - `dotenv` for loading environment variables from `.env`
 - Gemini API for chat, triage, and route narration
 - OpenWeatherMap API for current weather and forecast lookups
+- OpenStreetMap Nominatim API for live Philippine location validation
 
 There is no frontend framework, database, or build tool in this project.
 
@@ -132,13 +133,16 @@ The frontend sends the latest user message and conversation history to this endp
 The server then:
 
 - Parses route requests when possible
+- Selects the needed runtime tool/action for the query
 - Resolves aliases like `moa`, `bgc`, `cubao`, `makati`, and similar names
+- Validates typed origins and destinations with OpenStreetMap Nominatim when routing
 - Builds possible paths from local route data
 - Uses fallback terminals such as Pasay Rotonda, PITX, MOA, Makati, Buendia, or Guadalupe when a direct route is missing
 - Retrieves relevant source evidence from `data/commute-knowledge.json`
 - Reads fare/time details for supported paths where stored
 - Ranks route options by transfers, known time/fare data, fallback usage, and mode complexity
 - Builds route JSON for the frontend route card
+- Includes Nominatim-confirmed official place names in the route card when available
 - Appends source notes and caution text for transparency
 - Calls Gemini to write a short friendly intro when needed
 - Handles weather questions if OpenWeatherMap is configured
@@ -153,10 +157,13 @@ The knowledge base includes formal route or terminal references such as CommuteT
 flowchart TD
   A["User input"] --> B["Session history"]
   B --> C["POST /api/chat"]
-  C --> D["Intent + route parsing"]
+  C --> R["Runtime tool selection"]
+  R --> D["Intent + route parsing"]
+  R --> O["Weather API"]
   D --> E["Trip memory"]
   E --> F["Location resolver"]
-  F --> G["Candidate routes"]
+  F --> V["Nominatim lookup"]
+  V --> G["Candidate routes"]
   G --> H{"Route found?"}
   H -- "No" --> I["Fallback hubs"]
   H -- "Yes" --> J["References"]
@@ -165,7 +172,6 @@ flowchart TD
   J --> L["Route ranking"]
   L --> M["Route JSON"]
   M --> N["Gemini intro"]
-  C --> O["Weather API"]
   N --> P["Route card"]
   O --> P
   P --> Q["Citations"]
@@ -176,15 +182,32 @@ flowchart TD
 SaanPH follows this route-planning loop:
 
 1. Interpret the user's commute intent.
-2. Resolve origin and destination aliases.
-3. Generate candidate paths from stored route data.
-4. Ask for missing details if the origin or destination is incomplete.
-5. Try fallback transfer terminals when no direct stored route exists.
-6. Retrieve matching evidence from curated transport references.
-7. Rank and format the best route.
-8. Explain the route with source notes and uncertainty warnings.
+2. Select the needed runtime tool or action.
+3. Resolve origin and destination aliases.
+4. Validate typed places through OpenStreetMap Nominatim.
+5. Generate candidate paths from stored route data.
+6. Ask for missing details if the origin or destination is incomplete.
+7. Try fallback transfer terminals when no direct stored route exists.
+8. Retrieve matching evidence from curated transport references.
+9. Rank and format the best route.
+10. Explain the route with source notes and uncertainty warnings.
 
 This makes the system more than a static system prompt: it observes the user request, retrieves external route context from a controlled knowledge base, reasons over candidate paths, and responds with traceable references.
+
+### Runtime Tool Selection
+
+SaanPH uses controlled autonomous tool selection through `selectRuntimeTool` in `server.js`. For each message, the backend chooses the most relevant action from predefined options:
+
+- `direct_route_planner` for complete route requests
+- `nominatim_location_lookup` for live Philippine place validation before route planning
+- `memory_completed_route_planner` when the current message completes a previous partial trip
+- `missing_trip_detail_clarifier` when the origin or destination is missing
+- `alternative_route_memory` for follow-up alternative requests
+- `reference_knowledge_lookup` for source/reference questions
+- `carousel_stop_lister` and `premium_p2p_lister` for route-list requests
+- `gemini_intent_triage` when the message needs Gemini classification, including weather-style questions
+
+This is controlled tool selection rather than fully open-ended autonomy. The agent chooses at runtime, but only from safe tools already defined by the system.
 
 UV Express routes in the current data set keep terminal pairs from the supplied route references. Individual UV fares are intentionally not stored or returned because the available published fare figures are outdated. The sidebar includes a `PHP 60-100` guide range requested for orientation, and the route output tells users to verify the current fare at the terminal.
 
@@ -205,6 +228,7 @@ Premium P2P routes are stored separately from regular bus routes. Direct P2P mat
 - Premium P2P routes do not show fares or schedules unless those values are later added to the stored route data.
 - The app needs `GEMINI_API_KEY` for the full chat experience.
 - Weather depends on OpenWeatherMap and may fail if the API key is missing or the request times out.
+- Location validation depends on OpenStreetMap Nominatim availability and may fail or return broad place names.
 - There is no user login, saved history, or database.
 - The frontend is all in one `index.html`, so the file is fairly large.
 - The routing logic is useful for demos and simple planning, but it should not be treated as an official transit source.

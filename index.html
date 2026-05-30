@@ -491,6 +491,19 @@ body {
   line-height: 1;
 }
 
+.rc-verified {
+  padding: 8px 18px;
+  background: #F4FAF7;
+  border-bottom: 1px solid #D6E9DE;
+  color: #315B47;
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+
+.rc-verified strong {
+  color: #174D35;
+}
+
 .step-row {
   display: grid;
   grid-template-columns: 28px 84px minmax(260px, 1fr);
@@ -1271,6 +1284,16 @@ function buildCitationPanel(citations) {
 const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', uv:'UV', terminal:'TERM', shuttle:'SHUTTLE', tricycle:'TRIKE', walk:'WALK', p2p:'P2P' };
 
 function buildCard(d) {
+  const verifiedParts = [];
+  if (d.verifiedLocations?.origin?.name) {
+    verifiedParts.push(`<strong>Origin:</strong> ${esc(d.verifiedLocations.origin.name)}`);
+  }
+  if (d.verifiedLocations?.destination?.name) {
+    verifiedParts.push(`<strong>Destination:</strong> ${esc(d.verifiedLocations.destination.name)}`);
+  }
+  const verifiedHtml = verifiedParts.length
+    ? `<div class="rc-verified">OpenStreetMap verified ${verifiedParts.join(' · ')}</div>`
+    : '';
   const steps = (d.steps||[]).map((s, i) => {
     const t = (s.type||'walk').toLowerCase().replace(/[^a-z0-9]/g,'');
     const cls = ['mrt','lrt','jeep','bus','p2p','uv','terminal','shuttle','tricycle'].includes(t) ? t : 'walk';
@@ -1288,6 +1311,7 @@ function buildCard(d) {
     <div class="rc-header">
       <div class="rc-title">${esc(d.title||'Your Route')}</div>
     </div>
+    ${verifiedHtml}
     ${steps}
   </div>`;
 }
