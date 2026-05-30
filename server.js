@@ -42,7 +42,7 @@ const DB = {
     "tagaytay":"Tagaytay","tagaytay cavite":"Tagaytay","trece":"Trece Martires","trece martires":"Trece Martires","trece marites":"Trece Martires",
     "naia":"NAIA","airport":"NAIA","naia 1":"NAIA","naia 2":"NAIA","naia 3":"NAIA","naia 4":"NAIA",
     "terminal 1":"NAIA","terminal 2":"NAIA","terminal 3":"NAIA",
-    "makati":"Makati","ayala":"Makati","ayala center":"Makati","sm makati":"Makati","comembo":"Makati","pembo":"Makati","glorietta":"Makati","greenbelt":"Makati",
+    "makati":"Makati","ayala":"Makati","ayala center":"Makati","sm makati":"One Ayala Walk","landmark makati":"One Ayala Walk","the landmark makati":"One Ayala Walk","landmark":"One Ayala Walk","glorietta":"One Ayala Walk","greenbelt":"One Ayala Walk","greenbelt 5":"One Ayala Walk",
     "one ayala":"Makati","one ayala terminal":"Makati","buendia":"Buendia","gil puyat":"Buendia",
     "bgc":"BGC","bonifacio":"BGC","bonifacio global city":"BGC","taguig":"BGC","fort":"BGC",
     "market market":"BGC","uptown bgc":"BGC","uptown mall":"BGC",
@@ -91,6 +91,7 @@ const DB = {
     "Tenement":    { hub:"Tenement",        hubLine:"P2P",   hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Arca South Shuttle Loop": { hub:"Arca South Shuttle Loop", hubLine:"P2P", hubMin:0, hubKm:0, hubMode:"origin" },
     "Makati":      { hub:"Ayala",           hubLine:"MRT-3", hubMin:10, hubKm:2,  hubMode:"jeepney" },
+    "One Ayala Walk": { hub:"One Ayala Terminal", hubLine:"P2P", hubMin:6, hubKm:1, hubMode:"walk" },
     "Buendia":     { hub:"Buendia",         hubLine:"LRT-1", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "Guadalupe":   { hub:"Guadalupe",       hubLine:"MRT-3", hubMin:0,  hubKm:0,  hubMode:"origin"  },
     "BGC":         { hub:"Ayala",           hubLine:"MRT-3", hubMin:15, hubKm:3,  hubMode:"jeepney" },
@@ -938,6 +939,10 @@ function resolveLocations(originRaw, destinationRaw) {
   const displayName = (input, resolved) => {
     const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
     if (['ayala malls manila bay', 'ayala manila bay', 'manila bay mall'].includes(clean)) return 'Ayala Malls Manila Bay';
+    if (['greenbelt', 'greenbelt 5'].includes(clean)) return 'Greenbelt';
+    if (clean === 'glorietta') return 'Glorietta';
+    if (['landmark', 'landmark makati', 'the landmark makati'].includes(clean)) return 'Landmark Makati';
+    if (clean === 'sm makati') return 'SM Makati';
     if (['one ayala', 'one ayala terminal'].includes(clean)) return 'One Ayala Terminal';
     if (['sm bicutan', 'sm bicutan terminal'].includes(clean)) return 'SM Bicutan';
     if (['bf homes', 'sm bf', 'sm bf homes'].includes(clean)) return 'SM BF Homes';
@@ -955,6 +960,9 @@ function resolveLocations(originRaw, destinationRaw) {
   }
   if (origin === 'Arca South' && destination === 'Pasay') {
     destinationDisplay = 'Pasay Rotonda / MOA';
+  }
+  if (origin === 'One Ayala Walk') {
+    originDisplay = displayName(originRaw, origin);
   }
   if (destination === 'Bacoor') destinationDisplay = 'Bacoor, Cavite';
   if (destination === 'Dasmarinas') destinationDisplay = 'Dasmarinas, Cavite';
@@ -1227,7 +1235,7 @@ function listPaths(resolved) {
   }
 
   // ── P2P bus routes (bidirectional, single best match) ──
-  if (originDisplay === 'One Ayala Terminal') {
+  if (originDisplay === 'One Ayala Terminal' || origin === 'One Ayala Walk') {
     const services = DB.oneAyala.filter(service => service.to === destination);
     const landmarkServices = destinationDisplay !== destination
       ? services.filter(service => (service.landmarks || []).includes(destinationDisplay))
@@ -1235,10 +1243,21 @@ function listPaths(resolved) {
     const matchingServices = landmarkServices.length ? landmarkServices : services;
 
     matchingServices.forEach((service, index) => {
+      const walkToOneAyala = origin === 'One Ayala Walk'
+        ? [{
+          mode: 'walk',
+          from: originDisplay,
+          to: 'One Ayala Terminal',
+          min: 6,
+          note: `Walk from ${originDisplay} to One Ayala Terminal, then proceed to the appropriate bus or UV gate.`
+        }]
+        : [];
       paths.push({
         id:`ONE_AYALA_${index}`, type:'one_ayala_terminal',
-        description:`${service.service}: One Ayala Terminal -> ${destinationDisplay}`,
-        segments:[{
+        description:`${origin === 'One Ayala Walk' ? `${originDisplay} walk to One Ayala + ` : ''}${service.service}: One Ayala Terminal -> ${destinationDisplay}`,
+        segments:[
+          ...walkToOneAyala,
+          {
           mode: service.mode,
           from:'One Ayala Terminal',
           to: destinationDisplay,
@@ -1246,12 +1265,12 @@ function listPaths(resolved) {
           schedule: service.schedule,
           stops: service.stops
         }],
-        transfers:0
+        transfers: origin === 'One Ayala Walk' ? 1 : 0
       });
     });
   }
 
-  if (originDisplay === 'One Ayala Terminal' && paths.length > 0) {
+  if ((originDisplay === 'One Ayala Terminal' || origin === 'One Ayala Walk') && paths.length > 0) {
     return paths;
   }
 
