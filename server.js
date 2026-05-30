@@ -34,6 +34,7 @@ const DB = {
     "kayamanan c":"Kayamanan C","maharlika":"Maharlika","signal":"Signal","signal village":"Signal","triumph":"Triumph","tenement":"Tenement",
     "arca south shuttle loop":"Arca South Shuttle Loop","shuttle loop":"Arca South Shuttle Loop",
     "moa":"MOA","mall of asia":"MOA","sm moa":"MOA","sm mall of asia":"MOA",
+    "ayala malls manila bay":"MOA","ayala manila bay":"MOA","manila bay mall":"MOA","aseana":"MOA","asean avenue":"MOA","tambo paranaque":"MOA",
     "pasay":"Pasay","pasay rotonda":"Pasay","rotonda":"Pasay","taft avenue station":"Pasay","mrt 3 taft avenue station":"Pasay","baclaran":"Baclaran","pitx":"PITX",
     "cavite":"Cavite","bacoor":"Bacoor","bacoor cavite":"Bacoor","sm bacoor":"Bacoor","somo vista mall":"Bacoor","somo":"Bacoor","vista mall bacoor":"Bacoor",
     "dasma":"Dasmarinas","dasmarinas":"Dasmarinas","dasmariñas":"Dasmarinas","dasmarias":"Dasmarinas","dasmarinas cavite":"Dasmarinas","robinsons dasmarinas":"Dasmarinas","robinsons dasma":"Dasmarinas",
@@ -921,10 +922,13 @@ function buildPremiumP2PListReply(message) {
 
 function resolveLocations(originRaw, destinationRaw) {
   const normalize = (input) => {
-    const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
+    const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
     if (DB.aliases[clean]) return DB.aliases[clean];
-    for (const [alias, name] of Object.entries(DB.aliases)) {
-      if (clean.includes(alias) || alias.includes(clean)) return name;
+    const sortedAliases = Object.entries(DB.aliases)
+      .sort((a, b) => b[0].length - a[0].length);
+    for (const [alias, name] of sortedAliases) {
+      const normalizedAlias = alias.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
+      if (normalizedAlias.length >= 5 && new RegExp(`\\b${normalizedAlias.replace(/\s+/g, '\\s+')}\\b`).test(clean)) return name;
     }
     for (const area of Object.keys(DB.areas)) {
       if (clean.includes(area.toLowerCase())) return area;
@@ -932,7 +936,8 @@ function resolveLocations(originRaw, destinationRaw) {
     return input.trim().replace(/\b\w/g, c => c.toUpperCase());
   };
   const displayName = (input, resolved) => {
-    const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
+    const clean = input.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
+    if (['ayala malls manila bay', 'ayala manila bay', 'manila bay mall'].includes(clean)) return 'Ayala Malls Manila Bay';
     if (['one ayala', 'one ayala terminal'].includes(clean)) return 'One Ayala Terminal';
     if (['sm bicutan', 'sm bicutan terminal'].includes(clean)) return 'SM Bicutan';
     if (['bf homes', 'sm bf', 'sm bf homes'].includes(clean)) return 'SM BF Homes';
