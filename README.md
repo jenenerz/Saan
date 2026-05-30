@@ -145,6 +145,8 @@ The server then:
 
 The route data is stored directly in `server.js`, not in a database. The reference knowledge base is stored separately in `data/commute-knowledge.json` so the app can act like a retrieval-augmented commute agent without scraping live websites during every chat request.
 
+The knowledge base includes formal route or terminal references such as CommuteTour, Sakay.ph, The Poor Traveler, and PinoyCommute. It also includes `r/HowToGetTherePH` only as an unofficial community fallback, so the app treats those answers as supporting hints that still need terminal or operator verification.
+
 ### Retrieval-Augmented Agent Flow
 
 SaanPH follows this route-planning loop:

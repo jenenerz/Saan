@@ -48,27 +48,27 @@
     "caution": "Schedules and boarding gates can change; verify inside One Ayala before riding."
   },
   {
-    "id": "inquirer_unreliable_commutes_context",
-    "title": "Why Philippine commutes stay unreliable",
-    "source": "Inquirer Global Nation",
-    "url": "https://globalnation.inquirer.net/304451/why-ph-commutes-stay-unreliable",
-    "updated": "2025",
-    "reliability": "context",
-    "coverage": ["Philippines", "Metro Manila"],
-    "modes": ["public transport"],
-    "summary": "Context source on why Philippine commuting can be unreliable, including fragmented systems and daily uncertainty for riders.",
-    "caution": "Use only for explanation and uncertainty warnings, not for computing a specific route."
+    "id": "pinoycommute_route_terminal_guide",
+    "title": "PinoyCommute Philippines public transport guide",
+    "source": "PinoyCommute",
+    "url": "https://www.pinoycommute.com/",
+    "updated": "2024-2025",
+    "reliability": "route_reference",
+    "coverage": ["Philippines", "Metro Manila", "terminals", "stations", "routes", "fares", "schedules"],
+    "modes": ["bus", "jeepney", "train", "uv", "ferry", "tricycle"],
+    "summary": "Public transport guide for routes, terminals, fares, schedules, and station or terminal locations across the Philippines, including Metro Manila transport modes.",
+    "caution": "Use as supporting route and terminal guidance; confirm current fare, distance, and operating status before riding."
   },
   {
-    "id": "cpdg_commuting_inequality_context",
-    "title": "Commuting in Metro Manila: a daily struggle rooted in inequality",
-    "source": "CPDG",
-    "url": "https://cpdg.ph/commuting-in-metro-manila-a-daily-struggle-rooted-in-inequality/",
-    "updated": "source page",
-    "reliability": "context",
-    "coverage": ["Metro Manila"],
-    "modes": ["public transport"],
-    "summary": "Context source on Metro Manila commuting as a structural problem shaped by access, inequality, and daily travel burdens.",
-    "caution": "Use for social context and limitations, not for step-by-step routing."
+    "id": "reddit_howtogetthereph_community",
+    "title": "How To Get There Philippines community",
+    "source": "Reddit r/HowToGetTherePH",
+    "url": "https://www.reddit.com/r/HowToGetTherePH/",
+    "updated": "community posts change constantly",
+    "reliability": "community_fallback",
+    "coverage": ["Philippines", "Metro Manila", "NCR", "Cavite", "Laguna", "Rizal", "Bulacan", "commute questions"],
+    "modes": ["bus", "jeepney", "train", "uv", "van", "ferry", "tricycle"],
+    "summary": "Community Q&A subreddit for Philippine commute directions. Useful for uncommon routes, recent commuter experiences, and routes not covered by formal guides.",
+    "caution": "Community answers are unofficial and may be outdated, incomplete, or location-specific. Use only as a fallback and verify with terminals, operators, or official sources."
   }
 ]
