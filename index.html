@@ -427,6 +427,53 @@ body {
   box-shadow: 0 12px 28px rgba(60, 45, 25, 0.1);
 }
 
+.citation-marks {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+  vertical-align: super;
+}
+
+.citation-marks sup {
+  color: var(--jeep-blue);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.citation-panel {
+  margin-top: 10px;
+  max-width: min(100%, 860px);
+  font-size: 10.5px;
+  color: #665747;
+}
+
+.citation-panel summary {
+  cursor: pointer;
+  color: var(--jeep-blue);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.citation-list {
+  margin-top: 8px;
+  padding: 9px 11px;
+  border-left: 3px solid var(--route-teal);
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.citation-list a {
+  color: var(--jeep-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.citation-list a:hover { text-decoration: underline; }
+.citation-item + .citation-item { margin-top: 6px; }
+.citation-caution { margin-top: 8px; color: #7A5A00; }
+
 .rc-header {
   background: var(--jeep-blue);
   padding: 12px 20px;
@@ -1160,16 +1207,26 @@ function fillAndSend(text) {
 
 // ── RENDER ────────────────────────────────────────
 function renderReply(text) {
-  const m = text.match(/ROUTE_JSON:\s*(\{[\s\S]*\})/);
-  if (m) {
+  const routeMarker = 'ROUTE_JSON:';
+  const citationMarker = 'CITATIONS_JSON:';
+  const routeStart = text.indexOf(routeMarker);
+  if (routeStart !== -1) {
     try {
-      const route = JSON.parse(m[1]);
-      const before = text.slice(0, text.indexOf('ROUTE_JSON:')).trim();
-      const after  = text.slice(text.indexOf('ROUTE_JSON:') + m[0].length).trim();
+      const citationStart = text.indexOf(citationMarker, routeStart + routeMarker.length);
+      const routeText = (citationStart === -1
+        ? text.slice(routeStart + routeMarker.length)
+        : text.slice(routeStart + routeMarker.length, citationStart)
+      ).trim();
+      const citationText = citationStart === -1
+        ? ''
+        : text.slice(citationStart + citationMarker.length).trim();
+      const route = JSON.parse(routeText);
+      const citations = citationText ? JSON.parse(citationText) : null;
+      const before = text.slice(0, routeStart).trim();
       let html = '';
-      if (before) html += '<p>' + md(before) + '</p>';
+      if (before) html += '<p>' + md(before) + buildCitationMarks(citations) + '</p>';
       html += buildCard(route);
-      if (after) html += '<p style="margin-top:12px;font-size:11px;color:#999;">' + md(after) + '</p>';
+      html += buildCitationPanel(citations);
       addBotMsg(html);
 
       const tm = (route.title||'').match(/(.+?)\s*→\s*(.+)/);
@@ -1183,6 +1240,32 @@ function renderReply(text) {
     } catch(e) {}
   }
   addBotMsg('<p>' + md(text) + '</p>');
+}
+
+function buildCitationMarks(citations) {
+  const sources = citations?.sources || [];
+  if (!sources.length) return '';
+  return `<span class="citation-marks" aria-label="References">${sources.map((_, i) => `<sup>[${i + 1}]</sup>`).join('')}</span>`;
+}
+
+function buildCitationPanel(citations) {
+  const sources = citations?.sources || [];
+  if (!sources.length) return '';
+  const items = sources.map((source, index) => `
+    <div class="citation-item">
+      <sup>[${index + 1}]</sup>
+      <a href="${escAttr(source.url || '#')}" target="_blank" rel="noopener noreferrer">${esc(source.source || 'Reference')}</a>
+      <span> ${esc(source.title || '')}</span>
+    </div>
+  `).join('');
+  const cautions = (citations.cautions || []).map(esc).join(' ');
+  return `<details class="citation-panel">
+    <summary>References checked ${buildCitationMarks(citations)}</summary>
+    <div class="citation-list">
+      ${items}
+      ${cautions ? `<div class="citation-caution">${cautions}</div>` : ''}
+    </div>
+  </details>`;
 }
 
 const modeMap = { mrt:'MRT', lrt:'LRT', jeep:'JEEP', bus:'BUS', uv:'UV', terminal:'TERM', shuttle:'SHUTTLE', tricycle:'TRIKE', walk:'WALK', p2p:'P2P' };
@@ -1240,6 +1323,7 @@ function app(el) {
 
 function removeEl(id) { document.getElementById(id)?.remove(); }
 function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(t) { return esc(t).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function md(t) {
   return String(t)
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')

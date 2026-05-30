@@ -10,6 +10,18 @@ const MIME = {
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp'
 };
 
+function loadReferenceKnowledge() {
+  const knowledgePath = path.join(__dirname, 'data', 'commute-knowledge.json');
+  try {
+    return JSON.parse(fs.readFileSync(knowledgePath, 'utf8'));
+  } catch (error) {
+    console.warn(`Reference knowledge unavailable: ${error.message}`);
+    return [];
+  }
+}
+
+const REFERENCE_KNOWLEDGE = loadReferenceKnowledge();
+
 const DB = {
   aliases: {
     "paranaque":"Paranaque","parañaque":"Paranaque","para":"Paranaque",
@@ -956,6 +968,188 @@ function resolveLocations(originRaw, destinationRaw) {
 }
 
 // ── STAGE 2: list_paths ───────────────────────────
+// STAGE 1.5: retrieve route evidence from the curated commute knowledge base.
+function normalizeForRetrieval(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tokenizeForRetrieval(value) {
+  const stopWords = new Set(['the', 'and', 'for', 'from', 'with', 'route', 'routes', 'commute', 'terminal']);
+  return normalizeForRetrieval(value)
+    .split(' ')
+    .filter(token => token.length > 2 && !stopWords.has(token));
+}
+
+function getPlaceQueryTerms(...values) {
+  const terms = new Set();
+  values.filter(Boolean).forEach(value => {
+    terms.add(normalizeForRetrieval(value));
+    const aliasTerms = Object.entries(DB.aliases)
+      .filter(([, resolved]) => resolved === value)
+      .map(([alias]) => alias);
+    aliasTerms.forEach(alias => terms.add(normalizeForRetrieval(alias)));
+  });
+  return [...terms].filter(Boolean);
+}
+
+function retrieveRouteEvidence(resolved, paths = [], message = '') {
+  if (!REFERENCE_KNOWLEDGE.length) {
+    return { query: '', matches: [] };
+  }
+
+  const placeTerms = getPlaceQueryTerms(
+    resolved.origin,
+    resolved.destination,
+    resolved.originDisplay,
+    resolved.destinationDisplay,
+    resolved.originRaw,
+    resolved.destinationRaw
+  );
+  const pathTerms = paths.flatMap(route => [
+    route.type,
+    route.description,
+    ...(route.segments || []).flatMap(segment => [segment.mode, segment.service, segment.bus, segment.operator])
+  ]);
+  const queryText = [message, ...placeTerms, ...pathTerms].filter(Boolean).join(' ');
+  const queryTokens = new Set(tokenizeForRetrieval(queryText));
+
+  const scored = REFERENCE_KNOWLEDGE.map(entry => {
+    const haystack = [
+      entry.title,
+      entry.source,
+      entry.summary,
+      entry.caution,
+      ...(entry.coverage || []),
+      ...(entry.modes || [])
+    ].join(' ');
+    const entryTokens = new Set(tokenizeForRetrieval(haystack));
+    let score = 0;
+
+    queryTokens.forEach(token => {
+      if (entryTokens.has(token)) score += 2;
+      if ((entry.coverage || []).some(place => normalizeForRetrieval(place).includes(token))) score += 2;
+      if ((entry.modes || []).some(mode => normalizeForRetrieval(mode).includes(token))) score += 1;
+    });
+
+    placeTerms.forEach(term => {
+      if ((entry.coverage || []).map(normalizeForRetrieval).includes(term)) score += 4;
+      if (normalizeForRetrieval(entry.summary).includes(term)) score += 2;
+    });
+
+    if (paths.some(route => /uv/i.test(route.type) || route.segments?.some(segment => /uv/i.test(segment.mode || ''))) && (entry.modes || []).includes('uv')) score += 5;
+    if (paths.some(route => /p2p|one_ayala/i.test(route.type)) && (entry.modes || []).includes('p2p')) score += 4;
+    if (paths.some(route => /cavite/i.test(route.type)) && (entry.coverage || []).includes('Cavite')) score += 5;
+    if (paths.some(route => /edsa_carousel/i.test(route.type)) && (entry.modes || []).includes('edsa carousel')) score += 4;
+    if (/why|unreliable|traffic|struggle|inequality|context/i.test(message) && entry.reliability === 'context') score += 6;
+
+    return { ...entry, score };
+  })
+    .filter(entry => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  return {
+    query: queryText,
+    matches: scored.map(({ score, ...entry }) => entry)
+  };
+}
+
+function buildEvidenceNote(evidence) {
+  if (!evidence?.matches?.length) return '';
+  const cautions = [...new Set(evidence.matches.map(entry => entry.caution).filter(Boolean))].slice(0, 2);
+  const citations = {
+    sources: evidence.matches.map(entry => ({
+      source: entry.source,
+      title: entry.title,
+      url: entry.url
+    })),
+    cautions
+  };
+  return `\n\nCITATIONS_JSON:\n${JSON.stringify(citations)}`;
+}
+
+function getAutonomousCandidatePaths(resolved) {
+  const directPaths = listPaths(resolved);
+  if (directPaths.length > 0) {
+    return directPaths;
+  }
+  return buildFallbackTerminalPaths(resolved);
+}
+
+function buildFallbackTerminalPaths(resolved) {
+  const fallbackHubs = ['PITX', 'MOA', 'Pasay', 'Makati', 'Buendia', 'Guadalupe'];
+  const paths = [];
+
+  for (const hub of fallbackHubs) {
+    if (hub === resolved.origin || hub === resolved.destination) continue;
+
+    const toHubResolved = resolveLocations(resolved.originDisplay || resolved.origin, hub);
+    const fromHubResolved = resolveLocations(hub, resolved.destinationDisplay || resolved.destination);
+    const toHubPaths = listPaths(toHubResolved);
+    const fromHubPaths = listPaths(fromHubResolved);
+
+    if (!toHubPaths.length || !fromHubPaths.length) continue;
+
+    const firstLeg = toHubPaths[0];
+    const secondLeg = fromHubPaths[0];
+    const hubDisplay = toHubResolved.destinationDisplay || fromHubResolved.originDisplay || hub;
+
+    paths.push({
+      id: `FALLBACK_VIA_${hub.toUpperCase().replace(/\s+/g, '_')}`,
+      type: 'fallback_terminal',
+      description: `${firstLeg.description} + transfer via ${hubDisplay} + ${secondLeg.description}`,
+      displayOrigin: resolved.originDisplay,
+      displayDestination: resolved.destinationDisplay,
+      segments: [
+        ...firstLeg.segments,
+        {
+          mode: 'guided_terminal',
+          label: `Transfer at ${hubDisplay}`,
+          detail: `Use ${hubDisplay} as a fallback transfer point, then confirm the next bay, signboard, current fare, and operating status before boarding. / Gamitin ang ${hubDisplay} bilang lipatang terminal, pagkatapos ay kumpirmahin ang susunod na bay, karatula, kasalukuyang pamasahe, at biyahe bago sumakay.`
+        },
+        ...secondLeg.segments
+      ],
+      transfers: firstLeg.transfers + secondLeg.transfers + 1,
+      fallbackHub: hubDisplay
+    });
+  }
+
+  return paths.slice(0, 3);
+}
+
+function buildReferenceKnowledgeReply(message) {
+  const clean = normalizeForRetrieval(message);
+  const asksForSources = /\b(source|sources|reference|references|links|knowledge base|retrieval|rag)\b/i.test(message);
+  const asksForContext = /\b(unreliable|inequality|struggle|why.*commute|traffic problem)\b/i.test(message);
+  const looksLikeRoute = /\s+to\s+|\bpapunta\b|\bdirections?\b|\bsakay\b/i.test(message);
+  if ((!asksForSources && !asksForContext) || looksLikeRoute) return null;
+
+  const queryTokens = new Set(tokenizeForRetrieval(message));
+  const matches = REFERENCE_KNOWLEDGE.map(entry => {
+    const text = [entry.title, entry.source, entry.summary, entry.caution, ...(entry.coverage || []), ...(entry.modes || [])].join(' ');
+    const tokens = new Set(tokenizeForRetrieval(text));
+    let score = 0;
+    queryTokens.forEach(token => {
+      if (tokens.has(token)) score += 2;
+      if (normalizeForRetrieval(text).includes(token)) score += 1;
+    });
+    if (asksForSources && entry.reliability !== 'context') score += 2;
+    if (asksForContext && entry.reliability === 'context') score += 5;
+    return { ...entry, score };
+  })
+    .filter(entry => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, asksForSources ? 6 : 3);
+
+  if (!matches.length) return null;
+  const lines = matches.map((entry, index) => `${index + 1}. ${entry.source}: ${entry.title} - ${entry.summary} (${entry.url})`).join('\n');
+  return `I use these retrieved references for route evidence and context:\n${lines}\n\nFor live trips, please still verify fares, gates, and schedules at the terminal.\n\nGinagamit ko ang mga reference na ito para sa ebidensya ng ruta at konteksto:\n${lines}\n\nPara sa aktwal na biyahe, kumpirmahin pa rin ang pamasahe, gate, at iskedyul sa terminal.`;
+}
+
 function listPaths(resolved) {
   const { origin, destination, originArea, destArea, originDisplay = origin, destinationDisplay = destination } = resolved;
   const paths = [];
@@ -1306,9 +1500,28 @@ function readPath(p, isPeak) {
 
 // ── STAGE 4: get_context ──────────────────────────
 function getContext(readPaths) {
-  const ranked = [...readPaths];
+  const modePenalty = (segment) => {
+    if (segment.mode === 'walk') return 0;
+    if (['MRT-3', 'LRT-1', 'LRT-2'].includes(segment.mode)) return 1;
+    if (segment.mode === 'carousel') return 2;
+    if (['premium_p2p', 'p2p', 'ayala_p2p', 'ayala_bus'].includes(segment.mode)) return 3;
+    if (['uv', 'guided_uv', 'ayala_uv'].includes(segment.mode)) return 4;
+    if (['jeepney', 'guided_jeep'].includes(segment.mode)) return 5;
+    return 4;
+  };
+  const scorePath = (path) => {
+    const unknownFarePenalty = path.totalFare === null ? 18 : 0;
+    const unknownTimePenalty = path.totalMin === null ? 22 : 0;
+    const fallbackPenalty = path.type === 'fallback_terminal' ? 12 : 0;
+    const transferPenalty = (path.transfers || 0) * 14;
+    const timeScore = path.totalMin === null ? 0 : path.totalMin * 0.35;
+    const fareScore = path.totalFare === null ? 0 : path.totalFare * 0.05;
+    const modeScore = (path.segments || []).reduce((sum, segment) => sum + modePenalty(segment), 0);
+    return transferPenalty + unknownFarePenalty + unknownTimePenalty + fallbackPenalty + timeScore + fareScore + modeScore;
+  };
+  const ranked = [...readPaths].sort((a, b) => scorePath(a) - scorePath(b));
   return {
-    allPaths: readPaths,
+    allPaths: ranked,
     recommended: ranked[0]||null,
     alternatives: ranked.slice(1,3)
   };
@@ -1338,7 +1551,99 @@ function parseUserInput(message) {
   return { origin, destination, isPeak };
 }
 
+function findKnownPlaceMention(message) {
+  const clean = normalizeForRetrieval(message);
+  const matches = [];
+  for (const [alias, name] of Object.entries(DB.aliases)) {
+    const normalizedAlias = normalizeForRetrieval(alias);
+    if (normalizedAlias.length >= 3 && new RegExp(`\\b${normalizedAlias.replace(/\s+/g, '\\s+')}\\b`).test(clean)) {
+      matches.push({ alias, name, length: normalizedAlias.length });
+    }
+  }
+  for (const area of Object.keys(DB.areas)) {
+    const normalizedArea = normalizeForRetrieval(area);
+    if (new RegExp(`\\b${normalizedArea.replace(/\s+/g, '\\s+')}\\b`).test(clean)) {
+      matches.push({ alias: area, name: area, length: normalizedArea.length });
+    }
+  }
+  return matches.sort((a, b) => b.length - a.length)[0] || null;
+}
+
+function parsePartialRouteInput(message) {
+  const fullRoute = parseUserInput(message);
+  if (fullRoute.origin && fullRoute.destination) return null;
+
+  const hasRouteIntent = /\b(to|papunta|punta|goin|going|from|paano|how.*go|how.*get|how.*reach|directions?|route|commute|sakay)\b/i.test(message);
+  const isWeatherIntent = /\b(weather|rain|ulan|uulan|forecast|temperature|init|mainit)\b/i.test(message);
+  if (!hasRouteIntent || isWeatherIntent) return null;
+
+  const destinationMatch = message.match(/\b(?:to|papunta(?:ng)?|punta(?:ng)? sa|going to|go to)\s+(.+?)(?:[,.?!]|$)/i);
+  if (destinationMatch && !/\bfrom\b/i.test(message)) {
+    const place = findKnownPlaceMention(destinationMatch[1]);
+    if (place) return { missing: 'origin', destination: place.name };
+  }
+
+  const originMatch = message.match(/\bfrom\s+(.+?)(?:[,.?!]|$)/i);
+  if (originMatch && !/\bto\b/i.test(message)) {
+    const place = findKnownPlaceMention(originMatch[1]);
+    if (place) return { missing: 'destination', origin: place.name };
+  }
+
+  const place = findKnownPlaceMention(message);
+  if (place && /\b(how|paano|directions?|route|commute|sakay|punta)\b/i.test(message)) {
+    return { missing: 'origin', destination: place.name };
+  }
+
+  return null;
+}
+
+function buildMissingDetailReply(partial) {
+  if (!partial) return null;
+  if (partial.missing === 'origin') {
+    return `I can plan that trip. Where will you be coming from?\nKaya kong i-plano ang biyaheng iyan. Saan ka manggagaling?`;
+  }
+  if (partial.missing === 'destination') {
+    return `I can help with that. Where do you want to go from ${partial.origin}?\nMatutulungan kita diyan. Saan mo gustong pumunta mula ${partial.origin}?`;
+  }
+  return null;
+}
+
 // ── BUILD ROUTE JSON ──────────────────────────────
+function completeRouteFromConversation(message, history = []) {
+  const fullRoute = parseUserInput(message);
+  if (fullRoute.origin && fullRoute.destination) return fullRoute;
+
+  const currentPartial = parsePartialRouteInput(message);
+  const currentPlace = findKnownPlaceMention(message);
+  if (!currentPartial && !currentPlace) return null;
+
+  const currentOrigin = currentPartial?.origin ||
+    (/\b(from|coming from|galing|manggagaling)\b/i.test(message) ? currentPlace?.name : null);
+  const currentDestination = currentPartial?.destination ||
+    (/\b(to|going to|go to|papunta|punta)\b/i.test(message) ? currentPlace?.name : null);
+
+  const userMessages = history
+    .filter(item => item.role === 'user')
+    .map(item => item.text || item.parts?.[0]?.text || '')
+    .map(text => text.replace(/ROUTE_JSON:[\s\S]*/,'').replace(/CITATIONS_JSON:[\s\S]*/,'').trim())
+    .filter(Boolean);
+
+  for (let index = userMessages.length - 1; index >= 0; index -= 1) {
+    const previousPartial = parsePartialRouteInput(userMessages[index]);
+    if (!previousPartial) continue;
+
+    if (previousPartial.missing === 'origin' && currentOrigin) {
+      return { origin: currentOrigin, destination: previousPartial.destination, isPeak: fullRoute.isPeak };
+    }
+
+    if (previousPartial.missing === 'destination' && currentDestination) {
+      return { origin: previousPartial.origin, destination: currentDestination, isPeak: fullRoute.isPeak };
+    }
+  }
+
+  return null;
+}
+
 const ALTERNATIVE_INTENT_RE = /more options?|other options?|alternative|another (way|route|option)|second (way|route|option)|different (way|route|option)|ibang route|may iba pa|iba pa|ibang (paraan|sakay)|any other/i;
 
 function parseAlternativeTarget(message) {
@@ -1557,36 +1862,52 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      const referenceReply = buildReferenceKnowledgeReply(message);
+      if (referenceReply) {
+        sendJson(res, 200, { type:'chat', text: referenceReply });
+        return;
+      }
+
       // Direct route requests should use stored routes before AI triage, including in ongoing chats.
       // Alternative requests are handled from history below so named trips can select their second path.
       const isFollowUpIntent = ALTERNATIVE_INTENT_RE.test(message);
+      const completedFromMemory = isFollowUpIntent ? null : completeRouteFromConversation(message, history);
       const quickParse = isFollowUpIntent
         ? { origin: null, destination: null }
-        : parseUserInput(message);
+        : completedFromMemory || parseUserInput(message);
 
       if (quickParse.origin && quickParse.destination) {
         const resolved = resolveLocations(quickParse.origin, quickParse.destination);
-        const paths = listPaths(resolved);
+        const paths = getAutonomousCandidatePaths(resolved);
         if (paths.length > 0) {
           const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(message.toLowerCase());
           const readPaths = paths.map(p => readPath(p, isPeak));
           const context = getContext(readPaths);
+          const evidence = retrieveRouteEvidence(resolved, readPaths, message);
           const routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
 
           const weather = await getWeather(resolved.destination);
 
           const weatherNote = buildWeatherNote(weather);
-          const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
+          const evidenceContext = evidence.matches.map(entry => `${entry.source}: ${entry.summary}`).join(' ');
+          const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote} Retrieved evidence: ${evidenceContext}`.trim();
 
           const intro = await callGemini(NARRATION_PROMPT, introContext, [])
             .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!\nNarito ang ruta mo mula ${resolved.originDisplay} papuntang ${resolved.destinationDisplay}!`);
 
-          sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}` });
+          sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}${buildEvidenceNote(evidence)}` });
           return;
         }
       }
 
       // ── Triage via Gemini ──
+      const partialRoute = parsePartialRouteInput(message);
+      const missingDetailReply = buildMissingDetailReply(partialRoute);
+      if (missingDetailReply) {
+        sendJson(res, 200, { type:'chat', text: missingDetailReply });
+        return;
+      }
+
       const rawHistory = history
         .filter(m => m.role && (m.text || m.parts?.[0]?.text))
         .map(m => ({
@@ -1700,30 +2021,33 @@ const server = http.createServer(async (req, res) => {
             : null;
 
         if (altResolved) {
-          const altPaths = listPaths(altResolved);
+          const altPaths = getAutonomousCandidatePaths(altResolved);
           if (altPaths.length > 1) {
             const fullContext = [...history.map(m => m.text||''), message].join(' ');
             const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(fullContext.toLowerCase());
             const readPaths = altPaths.map(p => readPath(p, isPeak));
+            const rankedReadPaths = getContext(readPaths).allPaths;
             const priorAlternativeRequests = requestedTrip
               ? 0
               : userHistoryMessages
                   .slice(previousRequestIndex + 1)
                   .filter(text => ALTERNATIVE_INTENT_RE.test(text))
                   .length;
-            const alts = readPaths.slice(priorAlternativeRequests + 1);
+            const alts = rankedReadPaths.slice(priorAlternativeRequests + 1);
             if (alts.length > 0) {
               const altContext = getContext(alts);
+              const evidence = retrieveRouteEvidence(altResolved, alts, message);
               const altJson = buildRouteJson(altContext, altResolved.originDisplay, altResolved.destinationDisplay);
 
               const weather = await getWeather(altResolved.destination);
 
               const weatherNote = buildWeatherNote(weather);
-              const introContextAlt = `Alternative route: ${altResolved.originDisplay} to ${altResolved.destinationDisplay}. ${weatherNote}`.trim();
+              const evidenceContext = evidence.matches.map(entry => `${entry.source}: ${entry.summary}`).join(' ');
+              const introContextAlt = `Alternative route: ${altResolved.originDisplay} to ${altResolved.destinationDisplay}. ${weatherNote} Retrieved evidence: ${evidenceContext}`.trim();
 
               const intro = await callGemini(NARRATION_PROMPT, introContextAlt, triageHistory)
                 .catch(() => `Here's another option for you!\nNarito ang isa pang maaari mong daanan!`);
-              sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(altJson)}` });
+              sendJson(res, 200, { type:'route', text:`${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(altJson)}${buildEvidenceNote(evidence)}` });
               return;
             }
           }
@@ -1748,7 +2072,7 @@ const server = http.createServer(async (req, res) => {
 
       const resolved = resolveLocations(extractedOrigin, extractedDest);
 
-      const paths = listPaths(resolved);
+      const paths = getAutonomousCandidatePaths(resolved);
       console.log('ROUTE PATHS:', paths.map(p => p.description));
 
       if (paths.length === 0) {
@@ -1777,20 +2101,22 @@ const server = http.createServer(async (req, res) => {
       console.log('ROUTE DETAILS:', readPaths.map(p => ({ id: p.id, fare: p.totalFare, min: p.totalMin })));
 
       const context = getContext(readPaths);
+      const evidence = retrieveRouteEvidence(resolved, readPaths, message);
 
       const routeJson = buildRouteJson(context, resolved.originDisplay, resolved.destinationDisplay);
 
       const weather = await getWeather(resolved.destination);
 
       const weatherNote = buildWeatherNote(weather);
-      const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote}`.trim();
+      const evidenceContext = evidence.matches.map(entry => `${entry.source}: ${entry.summary}`).join(' ');
+      const introContext = `Route: ${resolved.originDisplay} to ${resolved.destinationDisplay}. Transfers: ${context.recommended.transfers}. ${weatherNote} Retrieved evidence: ${evidenceContext}`.trim();
 
       const intro = await callGemini(NARRATION_PROMPT, introContext, triageHistory)
         .catch(() => `Here's your route from ${resolved.originDisplay} to ${resolved.destinationDisplay}!\nNarito ang ruta mo mula ${resolved.originDisplay} papuntang ${resolved.destinationDisplay}!`);
 
       sendJson(res, 200, {
         type: 'route',
-        text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}` });
+        text: `${intro.trim()}\n\nROUTE_JSON:\n${JSON.stringify(routeJson)}${buildEvidenceNote(evidence)}` });
 
     } catch(e) {
       console.error('REQUEST ERROR:', e.message || e);

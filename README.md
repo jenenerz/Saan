@@ -1,12 +1,17 @@
 # SaanPH
 
-SaanPH is a small Metro Manila commute planner web app. It lets a user type a route like `Paranaque to Cubao`, then returns a suggested commute route using the route data and logic inside `server.js`.
+SaanPH is a small retrieval-augmented Metro Manila commute planner web app. It lets a user type a route like `Paranaque to Cubao`, retrieves matching evidence from a curated local reference knowledge base, computes a suggested commute route, then returns step-by-step guidance with source notes.
 
-The app has a single-page frontend in `index.html` and a Node.js backend in `server.js`. The backend serves the page, handles chat requests, computes routes from local route data, and can call Gemini for short natural-language replies.
+The app has a single-page frontend in `index.html` and a Node.js backend in `server.js`. The backend serves the page, handles chat requests, computes routes from local route data, retrieves relevant reference entries from `data/commute-knowledge.json`, and can call Gemini for short natural-language replies.
 
 ## Features
 
 - Simple chat-style commute planner
+- Retrieval-augmented route evidence from curated commute references
+- Source notes shown with route answers
+- Clarification questions when a commuter gives only an origin or destination
+- Autonomous fallback routing through major transfer hubs when a direct stored path is unavailable
+- Route ranking that favors simpler, more certain, lower-transfer options
 - Name-entry welcome screen before opening the planner
 - Example route buttons on the home screen
 - Local route matching for known Metro Manila areas and landmarks
@@ -74,6 +79,7 @@ The backend serves `index.html` directly, so there is no separate frontend dev s
 ```text
 .
 |-- index.html          # Frontend UI, styles, and browser-side JavaScript
+|-- data/               # Curated retrieval knowledge base for route/source evidence
 |-- assets/             # Landing-page illustration asset
 |-- server.js           # Node.js server, route data, routing logic, API handler
 |-- package.json        # Project metadata and npm scripts
@@ -128,13 +134,31 @@ The server then:
 - Parses route requests when possible
 - Resolves aliases like `moa`, `bgc`, `cubao`, `makati`, and similar names
 - Builds possible paths from local route data
+- Uses fallback terminals such as Pasay Rotonda, PITX, MOA, Makati, Buendia, or Guadalupe when a direct route is missing
+- Retrieves relevant source evidence from `data/commute-knowledge.json`
 - Reads fare/time details for supported paths where stored
-- Picks a route from the available paths
+- Ranks route options by transfers, known time/fare data, fallback usage, and mode complexity
 - Builds route JSON for the frontend route card
+- Appends source notes and caution text for transparency
 - Calls Gemini to write a short friendly intro when needed
 - Handles weather questions if OpenWeatherMap is configured
 
-The route data is stored directly in `server.js`, not in a database.
+The route data is stored directly in `server.js`, not in a database. The reference knowledge base is stored separately in `data/commute-knowledge.json` so the app can act like a retrieval-augmented commute agent without scraping live websites during every chat request.
+
+### Retrieval-Augmented Agent Flow
+
+SaanPH follows this route-planning loop:
+
+1. Interpret the user's commute intent.
+2. Resolve origin and destination aliases.
+3. Generate candidate paths from stored route data.
+4. Ask for missing details if the origin or destination is incomplete.
+5. Try fallback transfer terminals when no direct stored route exists.
+6. Retrieve matching evidence from curated transport references.
+7. Rank and format the best route.
+8. Explain the route with source notes and uncertainty warnings.
+
+This makes the system more than a static system prompt: it observes the user request, retrieves external route context from a controlled knowledge base, reasons over candidate paths, and responds with traceable references.
 
 UV Express routes in the current data set keep terminal pairs from the supplied route references. Individual UV fares are intentionally not stored or returned because the available published fare figures are outdated. The sidebar includes a `PHP 60-100` guide range requested for orientation, and the route output tells users to verify the current fare at the terminal.
 

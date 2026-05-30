@@ -1,0 +1,74 @@
+[
+  {
+    "id": "commutetour_route_directory",
+    "title": "CommuteTour Philippines route directory",
+    "source": "CommuteTour Philippines",
+    "url": "https://ph.commutetour.com/commute-routes/",
+    "updated": "source page varies by route",
+    "reliability": "reference",
+    "coverage": ["Alabang", "Ayala Makati", "BGC", "Buendia", "Cubao", "Manila", "MOA", "NAIA", "Pasay Rotonda", "PITX"],
+    "modes": ["bus", "jeepney", "train", "uv", "p2p"],
+    "summary": "Directory of Philippine commute route pages, terminals, bus operators, and fare notices. Use for route discovery and to identify which terminals or modes may be relevant.",
+    "caution": "Fares and schedules may change without prior notice; riders should verify with operators or terminals."
+  },
+  {
+    "id": "commutetour_pasay_rotonda_terminal",
+    "title": "Pasay Rotonda / MRT Taft terminal routes",
+    "source": "CommuteTour Philippines",
+    "url": "https://ph.commutetour.com/ph/terminal/edsa-taft-pasay-rotonda/",
+    "updated": "source page varies",
+    "reliability": "route_reference",
+    "coverage": ["Pasay", "Pasay Rotonda", "Taft Avenue", "Bacoor", "Imus", "Dasmarinas", "Molino", "Tagaytay", "Trece Martires", "Cavite", "PITX", "MOA"],
+    "modes": ["bus", "van", "jeepney", "edsa carousel"],
+    "summary": "Pasay Rotonda has terminal services near MRT-3 Taft Avenue / LRT-1 EDSA for Cavite-bound trips and connections through PITX or MOA.",
+    "caution": "Confirm the exact bay, vehicle type, signboard, fare, and operating status before boarding."
+  },
+  {
+    "id": "poortraveler_uv_express_routes_2020",
+    "title": "Operational UV Express routes and fares",
+    "source": "The Poor Traveler",
+    "url": "https://www.thepoortraveler.net/uv-express-routes-manila/",
+    "updated": "2020-11-29",
+    "reliability": "historical_route_reference",
+    "coverage": ["Alabang", "Las Pinas", "Makati", "Marikina", "Novaliches", "Paranaque", "Pasig", "Quezon City", "Taguig", "Cavite", "Rizal"],
+    "modes": ["uv"],
+    "summary": "Lists UV Express terminal pairs around Metro Manila and nearby provinces, including Paranaque-Ayala, Sucat-Lawton, Marikina-Cubao, Novaliches-Cubao, SM North-Fairview, and Antipolo-Ayala.",
+    "caution": "Published fares are old and should not be treated as current. Use route pairs only and ask riders to verify present fares."
+  },
+  {
+    "id": "sakay_one_ayala_terminal_guide",
+    "title": "One Ayala Terminal guide",
+    "source": "Sakay.ph Blog",
+    "url": "https://blog.sakay.ph/one-ayala-terminal-guide-routes-schedule-fare-and-features/",
+    "updated": "source page",
+    "reliability": "terminal_reference",
+    "coverage": ["One Ayala", "Ayala", "Makati", "PITX", "Alabang", "Bicutan", "Paranaque", "Antipolo", "Las Pinas", "SM BF Homes"],
+    "modes": ["bus", "p2p", "uv", "edsa carousel"],
+    "summary": "One Ayala Terminal supports city bus, EDSA Carousel, P2P, and UV Express services to destinations including PITX, Alabang, Bicutan, Paranaque, Antipolo, and Las Pinas.",
+    "caution": "Schedules and boarding gates can change; verify inside One Ayala before riding."
+  },
+  {
+    "id": "inquirer_unreliable_commutes_context",
+    "title": "Why Philippine commutes stay unreliable",
+    "source": "Inquirer Global Nation",
+    "url": "https://globalnation.inquirer.net/304451/why-ph-commutes-stay-unreliable",
+    "updated": "2025",
+    "reliability": "context",
+    "coverage": ["Philippines", "Metro Manila"],
+    "modes": ["public transport"],
+    "summary": "Context source on why Philippine commuting can be unreliable, including fragmented systems and daily uncertainty for riders.",
+    "caution": "Use only for explanation and uncertainty warnings, not for computing a specific route."
+  },
+  {
+    "id": "cpdg_commuting_inequality_context",
+    "title": "Commuting in Metro Manila: a daily struggle rooted in inequality",
+    "source": "CPDG",
+    "url": "https://cpdg.ph/commuting-in-metro-manila-a-daily-struggle-rooted-in-inequality/",
+    "updated": "source page",
+    "reliability": "context",
+    "coverage": ["Metro Manila"],
+    "modes": ["public transport"],
+    "summary": "Context source on Metro Manila commuting as a structural problem shaped by access, inequality, and daily travel burdens.",
+    "caution": "Use for social context and limitations, not for step-by-step routing."
+  }
+]
