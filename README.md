@@ -147,6 +147,30 @@ The route data is stored directly in `server.js`, not in a database. The referen
 
 The knowledge base includes formal route or terminal references such as CommuteTour, Sakay.ph, The Poor Traveler, and PinoyCommute. It also includes `r/HowToGetTherePH` only as an unofficial community fallback, so the app treats those answers as supporting hints that still need terminal or operator verification.
 
+### Architecture Diagram
+
+```mermaid
+flowchart TD
+  A["User input in index.html"] --> B["Frontend session history"]
+  B --> C["POST /api/chat in server.js"]
+  C --> D["Intent detection and route parsing"]
+  D --> E["Partial-trip memory resolver"]
+  E --> F["Alias and location resolver"]
+  F --> G["Route candidate generation"]
+  G --> H{"Direct route found?"}
+  H -- "No" --> I["Fallback transfer hubs"]
+  H -- "Yes" --> J["Reference retrieval"]
+  I --> J
+  J --> K["data/commute-knowledge.json"]
+  J --> L["Route ranking"]
+  L --> M["Route JSON builder"]
+  M --> N["Gemini narration"]
+  C --> O["OpenWeatherMap weather lookup"]
+  N --> P["Frontend route card"]
+  O --> P
+  P --> Q["Citation markers and collapsible references"]
+```
+
 ### Retrieval-Augmented Agent Flow
 
 SaanPH follows this route-planning loop:
