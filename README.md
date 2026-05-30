@@ -151,24 +151,24 @@ The knowledge base includes formal route or terminal references such as CommuteT
 
 ```mermaid
 flowchart TD
-  A["User input in index.html"] --> B["Frontend session history"]
-  B --> C["POST /api/chat in server.js"]
-  C --> D["Intent detection and route parsing"]
-  D --> E["Partial-trip memory resolver"]
-  E --> F["Alias and location resolver"]
-  F --> G["Route candidate generation"]
-  G --> H{"Direct route found?"}
-  H -- "No" --> I["Fallback transfer hubs"]
-  H -- "Yes" --> J["Reference retrieval"]
+  A["User input"] --> B["Session history"]
+  B --> C["POST /api/chat"]
+  C --> D["Intent + route parsing"]
+  D --> E["Trip memory"]
+  E --> F["Location resolver"]
+  F --> G["Candidate routes"]
+  G --> H{"Route found?"}
+  H -- "No" --> I["Fallback hubs"]
+  H -- "Yes" --> J["References"]
   I --> J
-  J --> K["data/commute-knowledge.json"]
+  J --> K["Knowledge JSON"]
   J --> L["Route ranking"]
-  L --> M["Route JSON builder"]
-  M --> N["Gemini narration"]
-  C --> O["OpenWeatherMap weather lookup"]
-  N --> P["Frontend route card"]
+  L --> M["Route JSON"]
+  M --> N["Gemini intro"]
+  C --> O["Weather API"]
+  N --> P["Route card"]
   O --> P
-  P --> Q["Citation markers and collapsible references"]
+  P --> Q["Citations"]
 ```
 
 ### Retrieval-Augmented Agent Flow
