@@ -188,9 +188,8 @@ const DB = {
     }
   },
 
-  // UV Express terminal pairs retained from the route references supplied for
-  // this project. Fare values are intentionally not stored because the
-  // available published values are outdated and should not guide current trips.
+  // UV terminal pairs from the route references. I left fares out because the
+  // published values I found may already be outdated.
   uvExpress: [
     { from:"Paranaque",   to:"Makati",     service:"BF Paranaque - Ayala Center" },
     { from:"Paranaque",   to:"Manila",     service:"Sucat (Paranaque) - Lawton (Park N Ride)" },
@@ -213,9 +212,9 @@ const DB = {
     { from:"Antipolo",    to:"Makati",     service:"Antipolo - Ayala" }
   ],
 
-  // Cavite route guidance supplied for the project and supported by:
+  // Cavite route notes used by the app. Main reference:
   // https://ph.commutetour.com/ph/terminal/edsa-taft-pasay-rotonda/
-  // No fares, schedules, or durations are stored; riders should confirm onsite.
+  // Fares, schedules, and trip times still need to be checked at the terminal.
   caviteRoutes: [
     ...["Cavite", "Bacoor", "Imus", "Dasmarinas", "Molino", "Tagaytay", "Trece Martires"].flatMap(destination => [
       {
@@ -355,9 +354,8 @@ const DB = {
     }))
   ],
 
-  // Arca South and FTI terminal guidance supplied for this project update.
-  // Vehicle type is kept generic when the supplied terminal list does not say
-  // which of the jeep, shuttle, or tricycle services operates that line.
+  // Arca South and FTI terminal routes. If the source does not name the exact
+  // vehicle type, the app keeps the label generic instead of guessing.
   terminalRoutes: [
     { from:"Arca South", to:"Alabang", mode:"guided_terminal", service:"Arca South - Alabang" },
     { from:"Arca South", to:"Pasay", mode:"guided_terminal", service:"Arca South - Pasay Rotonda / MOA" },
@@ -411,9 +409,8 @@ const DB = {
     }
   ],
 
-  // One Ayala Terminal routes transcribed from the Sakay.ph terminal guide
-  // supplied with this project update. Fare and trip duration are not listed
-  // in the supplied tables, so this data stores schedule and stops only.
+  // One Ayala routes from the Sakay.ph terminal guide. These entries keep the
+  // listed schedules and stops, but not fares or travel times.
   oneAyala: [
     { to:"PITX",       mode:"ayala_bus", service:"EDSA Carousel (Southbound)", schedule:"24 hours",                  stops:"Pasay Rotonda, Pasay Taft, Baclaran, Heritage, MOA, PITX" },
     { to:"Alabang",    mode:"ayala_bus", service:"Alabang City Bus",           schedule:"5:00 AM to 12:00 MN",     stops:"SM Bicutan, Loyola Memorial Park, Starmall Alabang" },
@@ -428,9 +425,8 @@ const DB = {
     { to:"Bicutan",    mode:"ayala_uv",  service:"Bicutan UV Express - Gate 9", schedule:"Monday to Saturday, 3:00 PM to 10:00 PM; Sunday, 5:00 PM to 7:00 PM", stops:"SM Bicutan, Russia Moonwalk, Russia Village Gate 1 & Gate 2, McDonald's Moonwalk", landmarks:["SM Bicutan"] }
   ],
 
-  // Premium P2P routes supplied for this project update. These remain
-  // separate from city bus entries so express terminal service is not inferred
-  // where it has not been stored. No fares or schedules were supplied.
+  // Premium P2P routes are kept separate from regular city buses so the app
+  // does not assume express service where it was not added.
   premiumP2P: [
     {
       from:{ name:"Greenbelt 5", city:"Makati", aliases:["greenbelt 5","greenbelt","gb5","makati"] },
@@ -553,7 +549,7 @@ const DB = {
   ]
 };
 
-// ── OPENWEATHERMAP ────────────────────────────────
+// OpenWeatherMap helpers
 const WEATHER_CITY_MAP = {
   "Paranaque":   "Paranaque City",
   "Las Pinas":   "Las Pinas",
@@ -591,7 +587,7 @@ const WEATHER_CITY_MAP = {
   "Katipunan":   "Quezon City",
 };
 
-// ── CURRENT WEATHER ───────────────────────────────
+// Current weather
 function getWeather(areaName) {
   return new Promise((resolve) => {
     const apiKey = process.env.OPENWEATHER_API_KEY;
@@ -635,7 +631,7 @@ function getWeather(areaName) {
   });
 }
 
-// ── FORECAST WEATHER ──────────────────────────────
+// Forecast weather
 function phDateParts(date = new Date()) {
   const shifted = new Date(date.getTime() + 8 * 60 * 60 * 1000);
   return {
@@ -696,8 +692,8 @@ function parseTargetDate(text) {
   return null;
 }
 
-// targetHour: 0-23 (local PH time). targetDateKey: YYYY-MM-DD in PH time.
-// If no target hour is supplied, returns the first forecast slot on the target date.
+// targetHour uses Philippine local time. If there is no requested hour, use the
+// first forecast slot available for the requested date.
 function getWeatherForecast(areaName, targetHour, targetDateKey = null, requestedDisplayDate = '') {
   return new Promise((resolve) => {
     const apiKey = process.env.OPENWEATHER_API_KEY;
@@ -726,7 +722,7 @@ function getWeatherForecast(areaName, targetHour, targetDateKey = null, requeste
             : json.list;
           if (matchingDateSlots.length === 0) { resolve(null); return; }
 
-          // Each slot is a 3-hour window. Find the best time match in the requested PH date.
+          // Forecast slots are 3 hours apart, so pick the closest one.
           let bestSlot = null;
           if (targetHour !== null && targetHour !== undefined) {
             let minDiff = Infinity;
@@ -744,7 +740,7 @@ function getWeatherForecast(areaName, targetHour, targetDateKey = null, requeste
 
           if (!bestSlot) { resolve(null); return; }
 
-          // Format the PH local time for display
+          // Show the forecast time in Philippine local time.
           const slotParts = phDateParts(new Date(bestSlot.dt * 1000));
           const slotDateKey = phDateKeyFromParts(slotParts);
           const displayTime = formatHour(slotParts.hour);
@@ -774,30 +770,30 @@ function getWeatherForecast(areaName, targetHour, targetDateKey = null, requeste
   });
 }
 
-// ── PARSE TARGET HOUR FROM USER MESSAGE ───────────
-// Returns 0-23 or null if no time found.
+// Pull a requested hour from the user's message.
+// Returns 0-23, or null if no time was found.
 function parseTargetHour(text) {
   const lower = text.toLowerCase();
-  // Match patterns like "6pm", "6:00pm", "6 pm", "18:00", "6am", "3:30pm"
+  // Matches times like "6pm", "6:00pm", "6 pm", "18:00", or "3:30pm".
   const match = lower.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/) ||
                 lower.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
   if (!match) return null;
 
   if (match[3]) {
-    // 12-hour format
+    // 12-hour time
     let hour = parseInt(match[1]);
     const isPm = match[3] === 'pm';
     if (isPm && hour !== 12) hour += 12;
     if (!isPm && hour === 12) hour = 0;
     return hour;
   } else if (match[2]) {
-    // 24-hour format (HH:MM)
+    // 24-hour time
     return parseInt(match[1]);
   }
   return null;
 }
 
-// ── STAGE 1: resolve_locations ────────────────────
+// Location matching
 function normalizeCarouselTerm(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -981,8 +977,7 @@ function resolveLocations(originRaw, destinationRaw) {
   };
 }
 
-// ── STAGE 2: list_paths ───────────────────────────
-// STAGE 1.5: retrieve route evidence from the curated commute knowledge base.
+// Route evidence from the local knowledge base
 function normalizeForRetrieval(value) {
   return String(value || '')
     .toLowerCase()
@@ -1234,7 +1229,7 @@ function listPaths(resolved) {
     }));
   }
 
-  // ── P2P bus routes (bidirectional, single best match) ──
+  // P2P routes
   if (originDisplay === 'One Ayala Terminal' || origin === 'One Ayala Walk') {
     const services = DB.oneAyala.filter(service => service.to === destination);
     const landmarkServices = destinationDisplay !== destination
@@ -1274,9 +1269,8 @@ function listPaths(resolved) {
     return paths;
   }
 
-  // Direct UV Express routes provide terminal-to-terminal service only; fares
-  // must be verified at the terminal because current values are not stored.
-  // No duration is assigned because the supplied sources do not publish one here.
+  // Direct UV routes are terminal-to-terminal only. The app does not store fares
+  // or durations here because the sources do not provide reliable current values.
   const uvMatch = DB.uvExpress.find(r =>
     (r.from === origin && r.to === destination) ||
     (r.from === destination && r.to === origin)
@@ -1323,7 +1317,7 @@ function listPaths(resolved) {
     });
   }
 
-  // Skip rail logic if either end is a P2P-only hub (MOA, PITX, NAIA, Alabang)
+  // These hubs are handled by bus or terminal logic, not rail matching.
   if (!originArea || !destArea) return paths;
   if (originArea.hubLine === 'P2P' || destArea.hubLine === 'P2P') return paths;
 
@@ -1336,7 +1330,7 @@ function listPaths(resolved) {
 
   const lines = [{ data:DB.mrt3 },{ data:DB.lrt1 },{ data:DB.lrt2 }];
 
-  // ── Same rail line, direct ──
+  // Same rail line
   for (const { data: line } of lines) {
     if (originArea.hubLine === line.name && destArea.hubLine === line.name) {
       const oi = stationIdx(line, originArea.hub);
@@ -1356,7 +1350,7 @@ function listPaths(resolved) {
     }
   }
 
-  // ── LRT-1 → MRT-3 ──
+  // LRT-1 to MRT-3
   if (originArea.hubLine==='LRT-1' && destArea.hubLine==='MRT-3') {
     const oi=stationIdx(DB.lrt1,originArea.hub), edsa=stationIdx(DB.lrt1,'EDSA');
     const taft=stationIdx(DB.mrt3,'Taft Avenue'), di=stationIdx(DB.mrt3,destArea.hub);
@@ -1374,7 +1368,7 @@ function listPaths(resolved) {
     }
   }
 
-  // ── MRT-3 → LRT-1 ──
+  // MRT-3 to LRT-1
   if (originArea.hubLine==='MRT-3' && destArea.hubLine==='LRT-1') {
     const oi=stationIdx(DB.mrt3,originArea.hub), taft=stationIdx(DB.mrt3,'Taft Avenue');
     const bac=stationIdx(DB.lrt1,'Baclaran'), di=stationIdx(DB.lrt1,destArea.hub);
@@ -1392,7 +1386,7 @@ function listPaths(resolved) {
     }
   }
 
-  // ── MRT-3 → LRT-2 ──
+  // MRT-3 to LRT-2
   if (originArea.hubLine==='MRT-3' && destArea.hubLine==='LRT-2') {
     const oi=stationIdx(DB.mrt3,originArea.hub), c3=stationIdx(DB.mrt3,'Araneta-Cubao');
     const c2=stationIdx(DB.lrt2,'Araneta-Cubao'), di=stationIdx(DB.lrt2,destArea.hub);
@@ -1410,7 +1404,7 @@ function listPaths(resolved) {
     }
   }
 
-  // ── LRT-2 → MRT-3 ──
+  // LRT-2 to MRT-3
   if (originArea.hubLine==='LRT-2' && destArea.hubLine==='MRT-3') {
     const oi=stationIdx(DB.lrt2,originArea.hub), c2=stationIdx(DB.lrt2,'Araneta-Cubao');
     const c3=stationIdx(DB.mrt3,'Araneta-Cubao'), di=stationIdx(DB.mrt3,destArea.hub);
@@ -1431,7 +1425,7 @@ function listPaths(resolved) {
   return paths;
 }
 
-// ── STAGE 3: read_path ────────────────────────────
+// Turn a stored path into display-ready route details.
 function readPath(p, isPeak) {
   const pm = isPeak ? 1.5 : 1;
   const segs = p.segments.map(s => {
@@ -1523,7 +1517,7 @@ function readPath(p, isPeak) {
     isPeak};
 }
 
-// ── STAGE 4: get_context ──────────────────────────
+// Rank route options for the response.
 function getContext(readPaths) {
   const modePenalty = (segment) => {
     if (segment.mode === 'walk') return 0;
@@ -1552,7 +1546,7 @@ function getContext(readPaths) {
   };
 }
 
-// ── PARSE USER INPUT ──────────────────────────────
+// User input parsing
 function parseUserInput(message) {
   const text = message.toLowerCase();
   const isPeak = /\b(7am|8am|5pm|6pm|7pm|rush|peak|morning rush|umaga)\b/.test(text);
@@ -1633,7 +1627,7 @@ function buildMissingDetailReply(partial) {
   return null;
 }
 
-// ── BUILD ROUTE JSON ──────────────────────────────
+// Route card data
 function completeRouteFromConversation(message, history = []) {
   const fullRoute = parseUserInput(message);
   if (fullRoute.origin && fullRoute.destination) return fullRoute;
@@ -1766,7 +1760,7 @@ function buildRouteJson(context, origin, destination) {
   };
 }
 
-// ── GEMINI CALL ───────────────────────────────────
+// Gemini request helper
 function callGeminiRaw(systemPrompt, userMessage, history) {
   return new Promise((resolve, reject) => {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -1816,7 +1810,7 @@ function callGemini(systemPrompt, userMessage, history) {
   return callGeminiRaw(systemPrompt, userMessage, history);
 }
 
-// ── SYSTEM PROMPTS ────────────────────────────────
+// Prompts used for narration and triage
 const NARRATION_PROMPT = `You are SakayAI, a friendly Metro Manila commute assistant.
 The route has already been computed. Write ONLY a warm introduction for it.
 Write ONE sentence in English, then repeat the same idea in ONE sentence in Filipino/Tagalog.
@@ -1864,7 +1858,7 @@ Known Manila landmarks:
 - "FTI", "FTI Terminal" = FTI
 - "DLSU", "Taft Ave", "Vito Cruz" = Taft area`;
 
-// ── HELPERS ───────────────────────────────────────
+// Basic response helpers
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body='';
@@ -1880,7 +1874,7 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-// ── BUILD WEATHER NOTE (shared helper) ────────────
+// Short weather note added to route narration.
 function buildWeatherNote(weather) {
   if (!weather) return '';
   return `Weather at destination: ${weather.description}, ${weather.temp}°C, humidity ${weather.humidity}%.${weather.isRainy ? ' IT IS CURRENTLY RAINING.' : ''}`;
@@ -2025,7 +2019,7 @@ function buildForecastAnswer(location, forecast) {
   return `Forecast for ${location} ${englishWhen}: ${forecast.description}, about ${forecast.temp}°C.${englishRain}\nTaya ng panahon sa ${location} ${tagalogWhen}: ${forecast.description}, humigit-kumulang ${forecast.temp}°C.${tagalogRain}`;
 }
 
-// ── SERVER ────────────────────────────────────────
+// HTTP server
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
@@ -2043,8 +2037,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // Direct route requests should use stored routes before AI triage, including in ongoing chats.
-      // Alternative requests are handled from history below so named trips can select their second path.
+      // Clear route requests go through stored route logic first.
+      // Alternative requests use chat history later in this handler.
       const isFollowUpIntent = selectedTool.type === 'show_alternatives';
       const quickParse = selectedTool.type === 'route_planner'
         ? selectedTool.route
@@ -2078,7 +2072,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // ── Triage via Gemini ──
+      // Use Gemini only when the local checks did not already decide the flow.
       const rawHistory = history
         .filter(m => m.role && (m.text || m.parts?.[0]?.text))
         .map(m => ({
@@ -2086,7 +2080,7 @@ const server = http.createServer(async (req, res) => {
           parts: [{ text: (m.text || m.parts?.[0]?.text || '').replace(/ROUTE_JSON:[\s\S]*/,'').trim() }]
         }));
 
-      // Enforce strict user/model alternation required by Gemini API
+      // Gemini expects the history roles to alternate.
       const triageHistory = [];
       let lastRole = null;
       for (const msg of rawHistory) {
@@ -2123,14 +2117,14 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
-      // ── Handle WEATHER_QUERY ──
+      // Weather questions
       const weatherQueryMatch = triageReply.match(/WEATHER_QUERY:\s*location="([^"]+)"(?:\s+date="([^"]+)")?\s+time="([^"]+)"/i);
       if (weatherQueryMatch) {
         const weatherLocation = weatherQueryMatch[1].trim();
         const weatherDateStr  = (weatherQueryMatch[2] || '').trim();
         const weatherTimeStr  = weatherQueryMatch[3].trim();
 
-        // Resolve the location using the existing alias system
+        // Reuse the same location aliases used by route planning.
         const resolvedLocation = resolveLocations(weatherLocation, weatherLocation).origin;
         const requestedDate = parseTargetDate(`${message} ${weatherDateStr}`);
         const requestedHour = parseTargetHour(message) ?? parseTargetHour(weatherTimeStr);
@@ -2164,7 +2158,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // ── Handle SHOW_ALTERNATIVES ──
+      // Alternative route requests
       if (/SHOW_ALTERNATIVES/i.test(triageReply)) {
         const historyMessages = history.map(m => m.text||m.parts?.[0]?.text||'');
         const userHistoryMessages = history
@@ -2229,7 +2223,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // ── Handle ROUTE_READY ──
+      // Route requests found by Gemini triage
       const routeReadyMatch = triageReply.match(/ROUTE_READY:\s*origin="([^"]+)"\s*destination="([^"]+)"/i);
 
       if (!routeReadyMatch) {
@@ -2283,7 +2277,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Static files
+  // Serve the frontend and static assets.
   let filePath = path.join(__dirname, req.url==='/'?'index.html':req.url);
   if (!filePath.startsWith(__dirname)) { res.writeHead(403); res.end('Forbidden'); return; }
   const ext = path.extname(filePath);
