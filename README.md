@@ -1,6 +1,6 @@
 # SaanPH
 
-SaanPH is a small retrieval-augmented Metro Manila commute planner web app. It lets a user type a route like `Paranaque to Cubao`, retrieves matching evidence from a curated local reference knowledge base, computes a suggested commute route, then returns step-by-step guidance with source notes.
+SaanPH is a small retrieval-augmented Metro Manila commute planner web app. It lets a user type a route like `Pasay to Bacoor`, `MOA to SM North`, or `ATC to Greenbelt`, retrieves matching evidence from a curated local reference knowledge base, computes a suggested commute route, then returns step-by-step guidance with source notes.
 
 The app has a single-page frontend in `index.html` and a Node.js backend in `server.js`. The backend serves the page, handles chat requests, computes routes from local route data, retrieves relevant reference entries from `data/commute-knowledge.json`, and can call Gemini for short natural-language replies.
 
@@ -93,13 +93,13 @@ The backend serves `index.html` directly, so there is no separate frontend dev s
 
 ### `GEMINI_API_KEY`
 
-Required for the main chat flow. The backend calls Gemini using:
+Required for full Gemini-based conversational triage and route narration. The backend calls Gemini using:
 
 ```text
 gemini-2.5-flash-lite
 ```
 
-If this is missing, route requests that need Gemini narration or triage can return an error.
+If this is missing, direct parsed route requests can still use stored route logic and local fallback narration, but Gemini-dependent triage and free-form conversational handling may return an error.
 
 ### `OPENWEATHER_API_KEY`
 
@@ -199,7 +199,7 @@ This makes the system more than a static system prompt: it observes the user req
 SaanPH uses controlled autonomous tool selection through `selectRuntimeTool` in `server.js`. For each message, the backend chooses the most relevant action from predefined options:
 
 - `direct_route_planner` for complete route requests
-- `nominatim_location_lookup` for live Philippine place validation before route planning
+- `nominatim_location_lookup` as a supporting validation step for live Philippine place checks before route planning
 - `memory_completed_route_planner` when the current message completes a previous partial trip
 - `missing_trip_detail_clarifier` when the origin or destination is missing
 - `alternative_route_memory` for follow-up alternative requests
@@ -240,5 +240,4 @@ Premium P2P routes are stored separately from regular bus routes. Direct P2P mat
 - Add tests for route parsing and path generation
 - Show fare and estimated time summaries more clearly in the UI
 - Add loading/error states for weather separately from routing
-- Split frontend CSS and JavaScript into separate files
 - Add a way to update route data without editing `server.js`
